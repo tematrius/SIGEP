@@ -49,10 +49,12 @@
                                 <i class="fas fa-cog"></i> Gestion
                             </a>
                             <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>risks.php">Risques</a></li>
-                                <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>budget.php">Budget</a></li>
-                                <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>resources.php">Ressources</a></li>
-                                <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>stakeholders.php">Parties prenantes</a></li>
+                                <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>risks.php"><i class="fas fa-exclamation-triangle"></i> Risques</a></li>
+                                <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>budget.php"><i class="fas fa-dollar-sign"></i> Budget</a></li>
+                                <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>resources.php"><i class="fas fa-cube"></i> Ressources</a></li>
+                                <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>stakeholders.php"><i class="fas fa-handshake"></i> Parties prenantes</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>users.php"><i class="fas fa-users"></i> Utilisateurs</a></li>
                             </ul>
                         </li>
                         <li class="nav-item">
@@ -62,16 +64,11 @@
                         </li>
                     </ul>
                     <ul class="navbar-nav">
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" id="notifDropdown" role="button" data-bs-toggle="dropdown">
+                        <li class="nav-item">
+                            <a class="nav-link position-relative" href="<?php echo BASE_URL; ?>notifications.php">
                                 <i class="fas fa-bell"></i>
-                                <span class="badge bg-danger" id="notif-count">0</span>
+                                <span class="badge bg-danger position-absolute top-0 start-100 translate-middle" id="notif-count">0</span>
                             </a>
-                            <ul class="dropdown-menu dropdown-menu-end" style="width: 300px;">
-                                <li><h6 class="dropdown-header">Notifications</h6></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="#">Aucune notification</a></li>
-                            </ul>
                         </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
