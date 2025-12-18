@@ -16,7 +16,8 @@ try {
     $location = $_GET['location'] ?? '';
     
     $sql = "SELECT p.*, l.name as location_name, u.full_name as creator_name,
-            (SELECT COUNT(*) FROM tasks WHERE project_id = p.id) as task_count
+            (SELECT COUNT(*) FROM tasks WHERE project_id = p.id) as task_count,
+            COALESCE((SELECT AVG(progress) FROM tasks WHERE project_id = p.id), 0) as calculated_progress
             FROM projects p
             LEFT JOIN locations l ON p.location_id = l.id
             LEFT JOIN users u ON p.created_by = u.id
@@ -175,11 +176,12 @@ ob_start();
                                     </span>
                                 </td>
                                 <td>
+                                    <?php $progress = round($project['calculated_progress']); ?>
                                     <div class="progress" style="height: 20px; min-width: 100px;">
-                                        <div class="progress-bar bg-<?php echo $project['progress'] < 30 ? 'danger' : ($project['progress'] < 70 ? 'warning' : 'success'); ?>" 
+                                        <div class="progress-bar bg-<?php echo $progress < 30 ? 'danger' : ($progress < 70 ? 'warning' : 'success'); ?>" 
                                              role="progressbar" 
-                                             style="width: <?php echo $project['progress']; ?>%">
-                                            <?php echo $project['progress']; ?>%
+                                             style="width: <?php echo $progress; ?>%">
+                                            <?php echo $progress; ?>%
                                         </div>
                                     </div>
                                 </td>

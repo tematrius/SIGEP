@@ -17,10 +17,11 @@ $pageTitle = 'Détails du Projet';
 try {
     $pdo = getDbConnection();
     
-    // Récupérer le projet
+    // Récupérer le projet avec progression calculée
     $stmt = $pdo->prepare("
         SELECT p.*, l.name as location_name, 
-               u1.full_name as creator_name, u2.full_name as updater_name
+               u1.full_name as creator_name, u2.full_name as updater_name,
+               COALESCE((SELECT AVG(progress) FROM tasks WHERE project_id = p.id), 0) as calculated_progress
         FROM projects p
         LEFT JOIN locations l ON p.location_id = l.id
         LEFT JOIN users u1 ON p.created_by = u1.id
@@ -179,11 +180,12 @@ ob_start();
                 <div class="row mb-3">
                     <div class="col-md-12">
                         <strong>Progression:</strong>
+                        <?php $progress = round($project['calculated_progress']); ?>
                         <div class="progress mt-2" style="height: 25px;">
-                            <div class="progress-bar bg-<?php echo $project['progress'] < 30 ? 'danger' : ($project['progress'] < 70 ? 'warning' : 'success'); ?>" 
+                            <div class="progress-bar bg-<?php echo $progress < 30 ? 'danger' : ($progress < 70 ? 'warning' : 'success'); ?>" 
                                  role="progressbar" 
-                                 style="width: <?php echo $project['progress']; ?>%">
-                                <?php echo $project['progress']; ?>%
+                                 style="width: <?php echo $progress; ?>%">
+                                <?php echo $progress; ?>%
                             </div>
                         </div>
                     </div>

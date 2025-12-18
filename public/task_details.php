@@ -57,6 +57,17 @@ try {
     $stmtComments->execute([$id]);
     $comments = $stmtComments->fetchAll();
     
+    // Récupérer les documents justificatifs
+    $stmtDocuments = $pdo->prepare("
+        SELECT td.*, u.full_name as uploader_name
+        FROM task_documents td
+        JOIN users u ON td.uploaded_by = u.id
+        WHERE td.task_id = ?
+        ORDER BY td.created_at DESC
+    ");
+    $stmtDocuments->execute([$id]);
+    $documents = $stmtDocuments->fetchAll();
+    
 } catch (PDOException $e) {
     setFlashMessage('error', 'Erreur lors du chargement de la tâche');
     redirect('tasks.php');
@@ -211,6 +222,178 @@ ob_start();
                 </div>
             </div>
         </div>
+        
+        <!-- Validation de la tâche -->
+        <?php if ($task['assigned_to'] == $_SESSION['user_id'] && $task['status'] !== 'terminee'): ?>
+        <div class="card mb-4 border-primary">
+            <div class="card-header bg-primary text-white">
+                <i class="fas fa-check-circle"></i> Validation de la Tâche
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i>
+                    Pour marquer cette tâche comme terminée, vous devez d'abord uploader au moins un document justificatif.
+                </div>
+                
+                <!-- Formulaire d'upload de documents multiples -->
+                <form method="POST" action="task_upload_document.php" enctype="multipart/form-data" class="mb-3" id="uploadForm">
+                    <input type="hidden" name="task_id" value="<?php echo $task['id']; ?>">
+                    
+                    <div id="filesContainer">
+                        <!-- Premier fichier -->
+                        <div class="file-upload-item border rounded p-3 mb-3" data-index="0">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="mb-0"><i class="fas fa-file"></i> Document 1</h6>
+                                <button type="button" class="btn btn-sm btn-danger remove-file" style="display: none;" onclick="removeFileItem(0)">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Fichier *</label>
+                                <input type="file" class="form-control" name="documents[]" required>
+                                <small class="text-muted">
+                                    Formats: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, ZIP, RAR (Max: 10 MB)
+                                </small>
+                            </div>
+                            
+                            <div class="mb-0">
+                                <label class="form-label">Description</label>
+                                <textarea class="form-control" name="descriptions[]" rows="2" placeholder="Description du document (optionnel)"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-secondary" onclick="addFileInput()">
+                            <i class="fas fa-plus"></i> Ajouter un autre fichier
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-upload"></i> Uploader les documents
+                        </button>
+                    </div>
+                </form>
+                
+                <script>
+                let fileIndex = 1;
+                
+                function addFileInput() {
+                    const container = document.getElementById('filesContainer');
+                    const newItem = document.createElement('div');
+                    newItem.className = 'file-upload-item border rounded p-3 mb-3';
+                    newItem.setAttribute('data-index', fileIndex);
+                    
+                    newItem.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0"><i class="fas fa-file"></i> Document ${fileIndex + 1}</h6>
+                            <button type="button" class="btn btn-sm btn-danger remove-file" onclick="removeFileItem(${fileIndex})">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Fichier *</label>
+                            <input type="file" class="form-control" name="documents[]" required>
+                            <small class="text-muted">
+                                Formats: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG, ZIP, RAR (Max: 10 MB)
+                            </small>
+                        </div>
+                        
+                        <div class="mb-0">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" name="descriptions[]" rows="2" placeholder="Description du document (optionnel)"></textarea>
+                        </div>
+                    `;
+                    
+                    container.appendChild(newItem);
+                    fileIndex++;
+                    
+                    // Afficher le bouton de suppression sur tous les items s'il y en a plus d'un
+                    updateRemoveButtons();
+                }
+                
+                function removeFileItem(index) {
+                    const item = document.querySelector(`[data-index="${index}"]`);
+                    if (item) {
+                        item.remove();
+                        updateRemoveButtons();
+                        updateFileNumbers();
+                    }
+                }
+                
+                function updateRemoveButtons() {
+                    const items = document.querySelectorAll('.file-upload-item');
+                    const removeButtons = document.querySelectorAll('.remove-file');
+                    
+                    if (items.length > 1) {
+                        removeButtons.forEach(btn => btn.style.display = 'block');
+                    } else {
+                        removeButtons.forEach(btn => btn.style.display = 'none');
+                    }
+                }
+                
+                function updateFileNumbers() {
+                    const items = document.querySelectorAll('.file-upload-item');
+                    items.forEach((item, index) => {
+                        const title = item.querySelector('h6');
+                        if (title) {
+                            title.innerHTML = `<i class="fas fa-file"></i> Document ${index + 1}`;
+                        }
+                    });
+                }
+                </script>
+                
+                <!-- Bouton de validation (si documents présents) -->
+                <?php if (!empty($documents)): ?>
+                <hr>
+                <form method="POST" action="task_mark_complete.php" onsubmit="return confirm('Êtes-vous sûr de vouloir marquer cette tâche comme terminée ?');">
+                    <input type="hidden" name="task_id" value="<?php echo $task['id']; ?>">
+                    <button type="submit" class="btn btn-success btn-lg w-100">
+                        <i class="fas fa-check-double"></i> Marquer la tâche comme terminée
+                    </button>
+                </form>
+                <?php endif; ?>
+            </div>
+        </div>
+        <?php endif; ?>
+        
+        <!-- Documents justificatifs -->
+        <?php if (!empty($documents)): ?>
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-file-alt"></i> Documents Justificatifs
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    <?php foreach ($documents as $doc): ?>
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">
+                                        <i class="fas fa-file-<?php echo $doc['file_type'] === 'pdf' ? 'pdf' : ($doc['file_type'] === 'doc' || $doc['file_type'] === 'docx' ? 'word' : ($doc['file_type'] === 'xls' || $doc['file_type'] === 'xlsx' ? 'excel' : 'alt')); ?>"></i>
+                                        <?php echo e($doc['file_name']); ?>
+                                    </h6>
+                                    <?php if ($doc['description']): ?>
+                                        <p class="mb-1"><?php echo nl2br(e($doc['description'])); ?></p>
+                                    <?php endif; ?>
+                                    <small class="text-muted">
+                                        Uploadé par <?php echo e($doc['uploader_name']); ?> 
+                                        le <?php echo date('d/m/Y H:i', strtotime($doc['created_at'])); ?>
+                                        (<?php echo round($doc['file_size'] / 1024, 2); ?> KB)
+                                    </small>
+                                </div>
+                                <div class="ms-3">
+                                    <a href="<?php echo BASE_URL . $doc['file_path']; ?>" class="btn btn-sm btn-primary" download>
+                                        <i class="fas fa-download"></i> Télécharger
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
         
         <!-- Sous-tâches -->
         <?php if (!empty($subtasks)): ?>

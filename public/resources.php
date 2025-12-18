@@ -179,7 +179,7 @@ ob_start();
                                 <td><?php echo e($resource['unit']); ?></td>
                                 <td>
                                     <?php if ($resource['cost_per_unit']): ?>
-                                        <?php echo number_format($resource['cost_per_unit'], 0, ',', ' '); ?> FCFA
+                                        <?php echo number_format($resource['cost_per_unit'], 0, ',', ' '); ?> FC
                                     <?php else: ?>
                                         -
                                     <?php endif; ?>

@@ -34,12 +34,15 @@ try {
     $stmt = $pdo->query("SELECT COUNT(*) as total FROM tasks WHERE status IN ('non_demarree', 'en_cours')");
     $stats['pending_tasks'] = $stmt->fetch()['total'];
     
-    // Projets récents
+    // Projets récents avec progression calculée
     $stmt = $pdo->prepare("
-        SELECT p.*, l.name as location_name, u.full_name as creator_name
+        SELECT p.*, l.name as location_name, u.full_name as creator_name,
+               COALESCE(AVG(t.progress), 0) as calculated_progress
         FROM projects p
         LEFT JOIN locations l ON p.location_id = l.id
         LEFT JOIN users u ON p.created_by = u.id
+        LEFT JOIN tasks t ON p.id = t.project_id
+        GROUP BY p.id
         ORDER BY p.created_at DESC
         LIMIT 5
     ");
@@ -246,11 +249,12 @@ ob_start();
                                             </span>
                                         </td>
                                         <td>
+                                            <?php $progress = round($project['calculated_progress']); ?>
                                             <div class="progress" style="height: 20px;">
-                                                <div class="progress-bar bg-<?php echo $project['progress'] < 30 ? 'danger' : ($project['progress'] < 70 ? 'warning' : 'success'); ?>" 
+                                                <div class="progress-bar bg-<?php echo $progress < 30 ? 'danger' : ($progress < 70 ? 'warning' : 'success'); ?>" 
                                                      role="progressbar" 
-                                                     style="width: <?php echo $project['progress']; ?>%">
-                                                    <?php echo $project['progress']; ?>%
+                                                     style="width: <?php echo $progress; ?>%">
+                                                    <?php echo $progress; ?>%
                                                 </div>
                                             </div>
                                         </td>

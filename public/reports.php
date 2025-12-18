@@ -33,6 +33,7 @@ try {
         case 'projects':
             $stmt = $pdo->query("
                 SELECT p.*, l.name as location_name, u.full_name as creator_name,
+                       p.budget_estimated as allocated_budget,
                        COUNT(DISTINCT t.id) as tasks_count,
                        COUNT(DISTINCT CASE WHEN t.status = 'terminee' THEN t.id END) as tasks_completed
                 FROM projects p
@@ -175,7 +176,7 @@ ob_start();
                     <div>
                         <p class="text-muted mb-1">Budget Total</p>
                         <h3 class="mb-0"><?php echo number_format(($globalStats['total_budget'] ?? 0) / 1000000, 1); ?>M</h3>
-                        <small class="text-muted">FCFA</small>
+                        <small class="text-muted">FC</small>
                     </div>
                     <div class="stats-icon bg-success">
                         <i class="fas fa-money-bill-wave"></i>
@@ -240,7 +241,7 @@ ob_start();
                                 <td><?php echo e($project['title']); ?></td>
                                 <td><?php echo e($project['status']); ?></td>
                                 <td><?php echo e($project['location_name']); ?></td>
-                                <td><?php echo number_format($project['allocated_budget'], 0, ',', ' '); ?> FCFA</td>
+                                <td><?php echo number_format($project['allocated_budget'] ?? 0, 0, ',', ' '); ?> FC</td>
                                 <td><?php echo $project['tasks_completed']; ?>/<?php echo $project['tasks_count']; ?></td>
                                 <td><?php echo date('d/m/Y', strtotime($project['created_at'])); ?></td>
                             </tr>
@@ -326,9 +327,9 @@ ob_start();
                             ?>
                             <tr>
                                 <td><?php echo e($budget['project_title']); ?></td>
-                                <td class="text-end"><?php echo number_format($budget['allocated_budget'], 0, ',', ' '); ?> FCFA</td>
-                                <td class="text-end"><?php echo number_format($budget['planned_total'], 0, ',', ' '); ?> FCFA</td>
-                                <td class="text-end"><?php echo number_format($budget['spent_total'], 0, ',', ' '); ?> FCFA</td>
+                                <td class="text-end"><?php echo number_format($budget['allocated_budget'], 0, ',', ' '); ?> FC</td>
+                                <td class="text-end"><?php echo number_format($budget['planned_total'], 0, ',', ' '); ?> FC</td>
+                                <td class="text-end"><?php echo number_format($budget['spent_total'], 0, ',', ' '); ?> FC</td>
                                 <td class="text-end"><?php echo number_format($usage, 1); ?>%</td>
                             </tr>
                         <?php endforeach; ?>

@@ -79,7 +79,7 @@ ob_start();
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <p class="text-muted mb-1">Budget Total Planifié</p>
-                        <h3 class="mb-0"><?php echo number_format($stats['total_planned'], 0, ',', ' '); ?> FCFA</h3>
+                        <h3 class="mb-0"><?php echo number_format($stats['total_planned'], 0, ',', ' '); ?> FC</h3>
                     </div>
                     <div class="stats-icon bg-primary">
                         <i class="fas fa-chart-line"></i>
@@ -95,7 +95,7 @@ ob_start();
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
                         <p class="text-muted mb-1">Budget Total Dépensé</p>
-                        <h3 class="mb-0"><?php echo number_format($stats['total_spent'], 0, ',', ' '); ?> FCFA</h3>
+                        <h3 class="mb-0"><?php echo number_format($stats['total_spent'], 0, ',', ' '); ?> FC</h3>
                     </div>
                     <div class="stats-icon bg-success">
                         <i class="fas fa-money-bill"></i>
@@ -116,7 +116,7 @@ ob_start();
                         $color = $remaining < 0 ? 'danger' : 'success';
                         ?>
                         <h3 class="mb-0 text-<?php echo $color; ?>">
-                            <?php echo number_format($remaining, 0, ',', ' '); ?> FCFA
+                            <?php echo number_format($remaining, 0, ',', ' '); ?> FC
                         </h3>
                     </div>
                     <div class="stats-icon bg-warning">
@@ -163,13 +163,13 @@ ob_start();
                                 <small class="text-muted"><?php echo $project['items_count']; ?> ligne(s)</small>
                             </td>
                             <td class="text-end">
-                                <?php echo number_format($project['allocated_budget'], 0, ',', ' '); ?> FCFA
+                                <?php echo number_format($project['allocated_budget'], 0, ',', ' '); ?> FC
                             </td>
                             <td class="text-end">
-                                <?php echo number_format($project['planned_total'], 0, ',', ' '); ?> FCFA
+                                <?php echo number_format($project['planned_total'], 0, ',', ' '); ?> FC
                             </td>
                             <td class="text-end">
-                                <?php echo number_format($project['spent_total'], 0, ',', ' '); ?> FCFA
+                                <?php echo number_format($project['spent_total'], 0, ',', ' '); ?> FC
                             </td>
                             <td>
                                 <div class="progress" style="height: 25px;">
@@ -239,11 +239,11 @@ ob_start();
                                     <small><?php echo e($item['description']); ?></small>
                                 </td>
                                 <td class="text-end">
-                                    <?php echo number_format($item['planned_amount'], 0, ',', ' '); ?> FCFA
+                                    <?php echo number_format($item['planned_amount'], 0, ',', ' '); ?> FC
                                 </td>
                                 <td class="text-end">
                                     <span class="text-<?php echo $item_color; ?>">
-                                        <?php echo number_format($item['spent_amount'], 0, ',', ' '); ?> FCFA
+                                        <?php echo number_format($item['spent_amount'], 0, ',', ' '); ?> FC
                                     </span>
                                 </td>
                                 <td class="text-center">

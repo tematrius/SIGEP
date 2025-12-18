@@ -38,18 +38,41 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Load notifications
 function loadNotifications() {
-    fetch('includes/get_notifications.php')
-        .then(response => response.json())
+    // Get the base URL from the page
+    const baseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/')) + '/';
+    const notifUrl = baseUrl.includes('/public/') 
+        ? baseUrl + '../includes/get_notifications.php' 
+        : baseUrl + 'includes/get_notifications.php';
+    
+    fetch(notifUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
         .then(data => {
             const count = document.getElementById('notif-count');
-            if (count && data.unread_count > 0) {
-                count.textContent = data.unread_count;
-                count.style.display = 'inline';
-            } else if (count) {
-                count.style.display = 'none';
+            if (count) {
+                if (data.unread_count > 0) {
+                    count.textContent = data.unread_count;
+                    count.classList.remove('d-none');
+                    count.style.display = 'inline';
+                } else {
+                    count.textContent = '0';
+                    count.classList.add('d-none');
+                    count.style.display = 'none';
+                }
             }
         })
-        .catch(error => console.error('Error loading notifications:', error));
+        .catch(error => {
+            console.error('Error loading notifications:', error);
+            // Optionally hide the badge on error
+            const count = document.getElementById('notif-count');
+            if (count) {
+                count.classList.add('d-none');
+            }
+        });
 }
 
 // Show loading spinner
