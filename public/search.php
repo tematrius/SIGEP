@@ -46,7 +46,7 @@ if (!empty($query)) {
         $results['tasks'] = $stmt->fetchAll();
         
         // Rechercher dans les utilisateurs
-        if (hasPermission('manage_users')) {
+        if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['Ministre', 'Directeur de Cabinet', 'Secretaire General', 'Chef de Projet'])) {
             $stmt = $pdo->prepare("
                 SELECT u.*, r.name as role_name
                 FROM users u

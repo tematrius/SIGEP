@@ -35,7 +35,8 @@ try {
     }
     
     // Vérifier si l'utilisateur est autorisé (assigné ou gestionnaire de projet)
-    $isAuthorized = ($task['assigned_to'] == $_SESSION['user_id']) || hasPermission('manage_all_projects');
+    $isAuthorized = ($task['assigned_to'] == $_SESSION['user_id']) || 
+                    (isset($_SESSION['role']) && in_array($_SESSION['role'], ['Ministre', 'Directeur de Cabinet', 'Secretaire General', 'Chef de Projet']));
     
     if (!$isAuthorized) {
         setFlashMessage('error', 'Vous n\'êtes pas autorisé à uploader des documents pour cette tâche');

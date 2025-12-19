@@ -5,9 +5,10 @@ if (!isLoggedIn()) {
     redirect('login.php');
 }
 
-// Seuls les admins peuvent accéder aux paramètres
-if (!hasPermission('manage_users')) {
-    setFlashMessage('error', 'Accès non autorisé');
+// Seuls les admins et ministre peuvent accéder aux paramètres
+$allowedRoles = ['Ministre', 'Directeur de Cabinet', 'Secretaire General'];
+if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], $allowedRoles)) {
+    setFlashMessage('error', 'Accès non autorisé. Réservé aux administrateurs et hauts responsables.');
     redirect('dashboard.php');
 }
 

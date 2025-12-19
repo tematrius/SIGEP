@@ -35,7 +35,8 @@ try {
     }
     
     // Vérifier si l'utilisateur est assigné
-    if ($task['assigned_to'] != $_SESSION['user_id'] && !hasPermission('manage_all_projects')) {
+    if ($task['assigned_to'] != $_SESSION['user_id'] && 
+        !(isset($_SESSION['role']) && in_array($_SESSION['role'], ['Ministre', 'Directeur de Cabinet', 'Secretaire General', 'Chef de Projet']))) {
         setFlashMessage('error', 'Vous n\'êtes pas autorisé à valider cette tâche');
         redirect('task_details.php?id=' . $task_id);
     }

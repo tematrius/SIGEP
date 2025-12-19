@@ -74,13 +74,29 @@ function hasPermission($permission) {
         return false;
     }
     
-    // Les admins ont toutes les permissions
-    if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
+    // Les Ministre, Directeur de Cabinet et Secrétaire Général ont toutes les permissions
+    if (isset($_SESSION['role']) && in_array($_SESSION['role'], ['Ministre', 'Directeur de Cabinet', 'Secretaire General'])) {
         return true;
     }
     
-    // Vérifier la permission dans la session
-    return isset($_SESSION['permissions']) && in_array($permission, $_SESSION['permissions']);
+    // Mapping des permissions par rôle
+    $rolePermissions = [
+        'Ministre' => ['manage_all_projects', 'view_reports', 'manage_budget', 'manage_users', 'manage_system'],
+        'Directeur de Cabinet' => ['manage_all_projects', 'view_reports', 'manage_budget', 'manage_users'],
+        'Secretaire General' => ['manage_all_projects', 'view_reports', 'manage_budget', 'manage_users'],
+        'Chef de Projet' => ['manage_projects', 'manage_tasks', 'view_reports', 'manage_budget'],
+        'Responsable Technique' => ['manage_tasks', 'view_projects', 'manage_resources'],
+        'Partenaire Externe' => ['view_projects', 'view_reports'],
+        'Observateur' => ['view_projects']
+    ];
+    
+    $userRole = $_SESSION['role'] ?? 'Observateur';
+    
+    if (isset($rolePermissions[$userRole])) {
+        return in_array($permission, $rolePermissions[$userRole]);
+    }
+    
+    return false;
 }
 
 /**
