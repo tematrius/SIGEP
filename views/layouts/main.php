@@ -65,6 +65,11 @@
                     </ul>
                     <ul class="navbar-nav">
                         <li class="nav-item">
+                            <a class="nav-link" href="<?php echo BASE_URL; ?>search.php">
+                                <i class="fas fa-search"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link position-relative" href="<?php echo BASE_URL; ?>notifications.php">
                                 <i class="fas fa-bell"></i>
                                 <span class="badge bg-danger position-absolute top-0 start-100 translate-middle" id="notif-count">0</span>

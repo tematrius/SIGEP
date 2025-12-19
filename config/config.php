@@ -65,3 +65,40 @@ function getFlashMessage($type) {
     }
     return null;
 }
+
+/**
+ * Fonction pour vérifier les permissions
+ */
+function hasPermission($permission) {
+    if (!isset($_SESSION['user_id'])) {
+        return false;
+    }
+    
+    // Les admins ont toutes les permissions
+    if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin') {
+        return true;
+    }
+    
+    // Vérifier la permission dans la session
+    return isset($_SESSION['permissions']) && in_array($permission, $_SESSION['permissions']);
+}
+
+/**
+ * Fonction pour enregistrer une activité
+ */
+function logActivity($action, $entity_type = null, $entity_id = null) {
+    if (!isset($_SESSION['user_id'])) {
+        return;
+    }
+    
+    try {
+        $pdo = getDbConnection();
+        $stmt = $pdo->prepare("
+            INSERT INTO activity_logs (user_id, action, entity_type, entity_id)
+            VALUES (?, ?, ?, ?)
+        ");
+        $stmt->execute([$_SESSION['user_id'], $action, $entity_type, $entity_id]);
+    } catch (PDOException $e) {
+        // Ignorer les erreurs de log silencieusement
+    }
+}

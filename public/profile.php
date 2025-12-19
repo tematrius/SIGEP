@@ -20,6 +20,53 @@ try {
     $stmt->execute([$_SESSION['user_id']]);
     $user = $stmt->fetch();
     
+    // Statistiques de l'utilisateur
+    $stats = [];
+    
+    // Projets créés
+    $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM projects WHERE created_by = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $stats['projects_created'] = $stmt->fetch()['count'];
+    
+    // Tâches assignées
+    $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM tasks WHERE assigned_to = ?");
+    $stmt->execute([$_SESSION['user_id']]);
+    $stats['tasks_assigned'] = $stmt->fetch()['count'];
+    
+    // Tâches terminées
+    $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM tasks WHERE assigned_to = ? AND status = 'terminee'");
+    $stmt->execute([$_SESSION['user_id']]);
+    $stats['tasks_completed'] = $stmt->fetch()['count'];
+    
+    // Taux de complétion
+    if ($stats['tasks_assigned'] > 0) {
+        $stats['completion_rate'] = round(($stats['tasks_completed'] / $stats['tasks_assigned']) * 100);
+    } else {
+        $stats['completion_rate'] = 0;
+    }
+    
+    // Tâches en cours
+    $stmt = $pdo->prepare("
+        SELECT t.*, p.title as project_title
+        FROM tasks t
+        JOIN projects p ON t.project_id = p.id
+        WHERE t.assigned_to = ? AND t.status IN ('non_demarree', 'en_cours')
+        ORDER BY t.end_date ASC
+        LIMIT 5
+    ");
+    $stmt->execute([$_SESSION['user_id']]);
+    $active_tasks = $stmt->fetchAll();
+    
+    // Activités récentes
+    $stmt = $pdo->prepare("
+        SELECT * FROM activity_logs 
+        WHERE user_id = ?
+        ORDER BY created_at DESC
+        LIMIT 10
+    ");
+    $stmt->execute([$_SESSION['user_id']]);
+    $recent_activities = $stmt->fetchAll();
+    
 } catch (PDOException $e) {
     setFlashMessage('error', 'Erreur lors du chargement du profil');
     redirect('dashboard.php');
@@ -105,9 +152,55 @@ ob_start();
 ?>
 
 <div class="row">
-    <div class="col-lg-8 mx-auto">
+    <!-- Statistiques personnelles -->
+    <div class="col-12 mb-4">
         <h2 class="mb-4"><i class="fas fa-user-circle"></i> Mon Profil</h2>
-
+        
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-folder fa-2x mb-2"></i>
+                        <h3 class="mb-0"><?php echo $stats['projects_created']; ?></h3>
+                        <small>Projets créés</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-tasks fa-2x mb-2"></i>
+                        <h3 class="mb-0"><?php echo $stats['tasks_assigned']; ?></h3>
+                        <small>Tâches assignées</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                        <h3 class="mb-0"><?php echo $stats['tasks_completed']; ?></h3>
+                        <small>Tâches terminées</small>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-percentage fa-2x mb-2"></i>
+                        <h3 class="mb-0"><?php echo $stats['completion_rate']; ?>%</h3>
+                        <small>Taux de complétion</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Informations du profil -->
+    <div class="col-lg-8">
         <div class="card mb-4">
             <div class="card-header">
                 <i class="fas fa-info-circle"></i> Informations du Compte
@@ -175,7 +268,7 @@ ob_start();
         
         <div class="card">
             <div class="card-header">
-                <i class="fas fa-clock"></i> Statistiques
+                <i class="fas fa-clock"></i> Informations de Compte
             </div>
             <div class="card-body">
                 <div class="row">
@@ -190,6 +283,72 @@ ob_start();
                 </div>
             </div>
         </div>
+    </div>
+    
+    <!-- Sidebar avec tâches et activités -->
+    <div class="col-lg-4">
+        <!-- Mes tâches en cours -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-tasks"></i> Mes Tâches en Cours
+            </div>
+            <div class="card-body">
+                <?php if (empty($active_tasks)): ?>
+                    <p class="text-center text-muted py-3">Aucune tâche en cours</p>
+                <?php else: ?>
+                    <ul class="list-group list-group-flush">
+                        <?php foreach ($active_tasks as $task): ?>
+                            <li class="list-group-item px-0">
+                                <h6 class="mb-1">
+                                    <a href="task_details.php?id=<?php echo $task['id']; ?>">
+                                        <?php echo e($task['title']); ?>
+                                    </a>
+                                </h6>
+                                <small class="text-muted"><?php echo e($task['project_title']); ?></small>
+                                <div class="progress mt-2" style="height: 15px;">
+                                    <div class="progress-bar" style="width: <?php echo $task['progress']; ?>%">
+                                        <?php echo $task['progress']; ?>%
+                                    </div>
+                                </div>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                    <div class="mt-3 text-center">
+                        <a href="tasks.php" class="btn btn-sm btn-outline-primary">
+                            Voir toutes mes tâches
+                        </a>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+        
+        <!-- Activités récentes -->
+        <?php if (!empty($recent_activities)): ?>
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-history"></i> Activités Récentes
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <?php foreach ($recent_activities as $activity): ?>
+                        <li class="mb-3">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-circle text-primary" style="font-size: 8px;"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-2">
+                                    <small class="text-muted"><?php echo e($activity['action']); ?></small><br>
+                                    <small class="text-muted">
+                                        <?php echo date('d/m/Y H:i', strtotime($activity['created_at'])); ?>
+                                    </small>
+                                </div>
+                            </div>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            </div>
+        </div>
+        <?php endif; ?>
     </div>
 </div>
 
