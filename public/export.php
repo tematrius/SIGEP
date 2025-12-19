@@ -23,7 +23,7 @@ try {
     switch ($type) {
         case 'projects':
             $filename = 'projets_' . date('Y-m-d');
-            $headers = ['ID', 'Titre', 'Description', 'Statut', 'Localisation', 'Date Début', 'Date Fin', 'Budget Total', 'Progression', 'Créé le'];
+            $headers = ['ID', 'Titre', 'Description', 'Statut', 'Localisation', 'Date Début', 'Date Fin', 'Budget Estimé', 'Progression', 'Créé le'];
             
             $stmt = $pdo->query("
                 SELECT 
@@ -34,12 +34,11 @@ try {
                     l.name as location,
                     p.start_date,
                     p.end_date,
-                    COALESCE(SUM(bi.amount), 0) as total_budget,
+                    COALESCE(p.budget_estimated, 0) as total_budget,
                     COALESCE(AVG(t.progress), 0) as progress,
                     p.created_at
                 FROM projects p
                 LEFT JOIN locations l ON p.location_id = l.id
-                LEFT JOIN budget_items bi ON p.id = bi.project_id
                 LEFT JOIN tasks t ON p.id = t.project_id
                 GROUP BY p.id
                 ORDER BY p.created_at DESC
@@ -252,6 +251,11 @@ try {
             redirect('reports.php');
     }
     
+    // Nettoyer tous les buffers de sortie avant l'export
+    while (ob_get_level()) {
+        ob_end_clean();
+    }
+    
     // Générer le fichier selon le format
     if ($format === 'csv') {
         header('Content-Type: text/csv; charset=utf-8');
@@ -314,6 +318,10 @@ try {
     
 } catch (PDOException $e) {
     error_log('Export error: ' . $e->getMessage());
-    setFlashMessage('error', 'Erreur lors de l\'export');
+    setFlashMessage('error', 'Erreur lors de l\'export: ' . $e->getMessage());
+    redirect('reports.php');
+} catch (Exception $e) {
+    error_log('Export error: ' . $e->getMessage());
+    setFlashMessage('error', 'Erreur lors de l\'export: ' . $e->getMessage());
     redirect('reports.php');
 }
