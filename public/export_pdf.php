@@ -183,7 +183,6 @@ try {
             height: 100px;
             object-fit: cover;
             border-radius: 50%;
-            border: 3px solid #0d6efd;
         }
         
         .header-content {

@@ -64,24 +64,24 @@ try {
 ob_start();
 ?>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="fas fa-money-bill-wave"></i> Gestion du Budget</h2>
-    <a href="budget_item_create.php" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Ajouter une ligne budgétaire
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-3">
+    <h2 class="mb-0"><i class="fas fa-money-bill-wave"></i> Gestion du Budget</h2>
+    <a href="budget_item_create.php" class="btn btn-primary btn-block-mobile">
+        <i class="fas fa-plus"></i> Ajouter une ligne
     </a>
 </div>
 
 <!-- Statistiques globales -->
 <div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card stats-card border-primary">
+    <div class="col-md-4 mb-3 mb-md-0">
+        <div class="card stats-card border-primary h-100">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <p class="text-muted mb-1">Budget Total Planifié</p>
-                        <h3 class="mb-0"><?php echo number_format($stats['total_planned'], 0, ',', ' '); ?> FC</h3>
+                        <p class="text-muted mb-1 small">Budget Total Planifié</p>
+                        <h4 class="mb-0"><?php echo number_format($stats['total_planned'], 0, ',', ' '); ?> FC</h4>
                     </div>
-                    <div class="stats-icon bg-primary">
+                    <div class="stats-icon bg-primary d-none d-md-block">
                         <i class="fas fa-chart-line"></i>
                     </div>
                 </div>
@@ -89,15 +89,15 @@ ob_start();
         </div>
     </div>
     
-    <div class="col-md-4">
-        <div class="card stats-card border-success">
+    <div class="col-md-4 mb-3 mb-md-0">
+        <div class="card stats-card border-success h-100">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <p class="text-muted mb-1">Budget Total Dépensé</p>
-                        <h3 class="mb-0"><?php echo number_format($stats['total_spent'], 0, ',', ' '); ?> FC</h3>
+                        <p class="text-muted mb-1 small">Budget Total Dépensé</p>
+                        <h4 class="mb-0"><?php echo number_format($stats['total_spent'], 0, ',', ' '); ?> FC</h4>
                     </div>
-                    <div class="stats-icon bg-success">
+                    <div class="stats-icon bg-success d-none d-md-block">
                         <i class="fas fa-money-bill"></i>
                     </div>
                 </div>
@@ -106,20 +106,20 @@ ob_start();
     </div>
     
     <div class="col-md-4">
-        <div class="card stats-card border-warning">
+        <div class="card stats-card border-warning h-100">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <p class="text-muted mb-1">Reste à Utiliser</p>
+                        <p class="text-muted mb-1 small">Reste à Utiliser</p>
                         <?php 
                         $remaining = $stats['total_planned'] - $stats['total_spent'];
                         $color = $remaining < 0 ? 'danger' : 'success';
                         ?>
-                        <h3 class="mb-0 text-<?php echo $color; ?>">
+                        <h4 class="mb-0 text-<?php echo $color; ?>">
                             <?php echo number_format($remaining, 0, ',', ' '); ?> FC
-                        </h3>
+                        </h4>
                     </div>
-                    <div class="stats-icon bg-warning">
+                    <div class="stats-icon bg-warning d-none d-md-block">
                         <i class="fas fa-wallet"></i>
                     </div>
                 </div>
@@ -139,10 +139,10 @@ ob_start();
                 <thead>
                     <tr>
                         <th>Projet</th>
-                        <th class="text-end">Budget Alloué</th>
-                        <th class="text-end">Budget Planifié</th>
-                        <th class="text-end">Budget Dépensé</th>
-                        <th class="text-center">Utilisation</th>
+                        <th class="text-end">Alloué</th>
+                        <th class="text-end">Planifié</th>
+                        <th class="text-end">Dépensé</th>
+                        <th class="text-center d-none d-lg-table-cell">Utilisation</th>
                         <th class="text-center">Actions</th>
                     </tr>
                 </thead>
@@ -163,15 +163,18 @@ ob_start();
                                 <small class="text-muted"><?php echo $project['items_count']; ?> ligne(s)</small>
                             </td>
                             <td class="text-end">
-                                <?php echo number_format($project['allocated_budget'], 0, ',', ' '); ?> FC
+                                <span class="d-none d-md-inline"><?php echo number_format($project['allocated_budget'], 0, ',', ' '); ?> FC</span>
+                                <span class="d-md-none"><?php echo number_format($project['allocated_budget'] / 1000, 0); ?>K</span>
                             </td>
                             <td class="text-end">
-                                <?php echo number_format($project['planned_total'], 0, ',', ' '); ?> FC
+                                <span class="d-none d-md-inline"><?php echo number_format($project['planned_total'], 0, ',', ' '); ?> FC</span>
+                                <span class="d-md-none"><?php echo number_format($project['planned_total'] / 1000, 0); ?>K</span>
                             </td>
                             <td class="text-end">
-                                <?php echo number_format($project['spent_total'], 0, ',', ' '); ?> FC
+                                <span class="d-none d-md-inline"><?php echo number_format($project['spent_total'], 0, ',', ' '); ?> FC</span>
+                                <span class="d-md-none"><?php echo number_format($project['spent_total'] / 1000, 0); ?>K</span>
                             </td>
-                            <td>
+                            <td class="d-none d-lg-table-cell">
                                 <div class="progress" style="height: 25px;">
                                     <div class="progress-bar bg-<?php echo $color; ?>" 
                                          role="progressbar" 
@@ -181,12 +184,14 @@ ob_start();
                                 </div>
                             </td>
                             <td class="text-center">
-                                <a href="budget.php?project_id=<?php echo $project['id']; ?>" class="btn btn-sm btn-info">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="budget_item_create.php?project_id=<?php echo $project['id']; ?>" class="btn btn-sm btn-success">
-                                    <i class="fas fa-plus"></i>
-                                </a>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="budget.php?project_id=<?php echo $project['id']; ?>" class="btn btn-info" title="Voir détails">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="budget_item_create.php?project_id=<?php echo $project['id']; ?>" class="btn btn-success" title="Ajouter">
+                                        <i class="fas fa-plus"></i>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -214,11 +219,11 @@ ob_start();
                     <thead>
                         <tr>
                             <th>Catégorie</th>
-                            <th>Article</th>
-                            <th>Description</th>
-                            <th class="text-end">Montant Planifié</th>
-                            <th class="text-end">Montant Dépensé</th>
-                            <th class="text-center">Statut</th>
+                            <th class="d-none d-md-table-cell">Article</th>
+                            <th class="d-none d-lg-table-cell">Description</th>
+                            <th class="text-end">Planifié</th>
+                            <th class="text-end">Dépensé</th>
+                            <th class="text-center d-none d-md-table-cell">Statut</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -233,26 +238,31 @@ ob_start();
                             <tr>
                                 <td>
                                     <span class="badge bg-secondary"><?php echo e($item['category']); ?></span>
+                                    <div class="d-md-none mt-1">
+                                        <small><strong><?php echo e($item['item_name']); ?></strong></small>
+                                    </div>
                                 </td>
-                                <td><strong><?php echo e($item['item_name']); ?></strong></td>
-                                <td>
+                                <td class="d-none d-md-table-cell"><strong><?php echo e($item['item_name']); ?></strong></td>
+                                <td class="d-none d-lg-table-cell">
                                     <small><?php echo e($item['description']); ?></small>
                                 </td>
                                 <td class="text-end">
-                                    <?php echo number_format($item['planned_amount'], 0, ',', ' '); ?> FC
+                                    <span class="d-none d-md-inline"><?php echo number_format($item['planned_amount'], 0, ',', ' '); ?> FC</span>
+                                    <span class="d-md-none"><?php echo number_format($item['planned_amount'] / 1000, 0); ?>K</span>
                                 </td>
                                 <td class="text-end">
                                     <span class="text-<?php echo $item_color; ?>">
-                                        <?php echo number_format($item['spent_amount'], 0, ',', ' '); ?> FC
+                                        <span class="d-none d-md-inline"><?php echo number_format($item['spent_amount'], 0, ',', ' '); ?> FC</span>
+                                        <span class="d-md-none"><?php echo number_format($item['spent_amount'] / 1000, 0); ?>K</span>
                                     </span>
                                 </td>
-                                <td class="text-center">
+                                <td class="text-center d-none d-md-table-cell">
                                     <span class="badge bg-<?php echo $item_color; ?>">
                                         <?php echo number_format($item_percent, 0); ?>%
                                     </span>
                                 </td>
                                 <td>
-                                    <a href="budget_item_edit.php?id=<?php echo $item['id']; ?>" class="btn btn-sm btn-warning">
+                                    <a href="budget_item_edit.php?id=<?php echo $item['id']; ?>" class="btn btn-sm btn-warning" title="Modifier">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                 </td>
