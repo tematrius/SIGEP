@@ -110,6 +110,9 @@ ob_start();
         <a href="analytics.php" class="btn btn-info me-2">
             <i class="fas fa-chart-line"></i> Analyses avancées
         </a>
+        <a href="export_pdf.php?type=<?php echo $report_type; ?>" target="_blank" class="btn btn-danger me-2">
+            <i class="fas fa-file-pdf"></i> Export PDF
+        </a>
         <button onclick="window.print()" class="btn btn-secondary">
             <i class="fas fa-print"></i> Imprimer
         </button>
