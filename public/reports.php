@@ -107,12 +107,25 @@ ob_start();
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="fas fa-chart-bar"></i> Rapports et Statistiques</h2>
     <div>
+        <a href="analytics.php" class="btn btn-info me-2">
+            <i class="fas fa-chart-line"></i> Analyses avancées
+        </a>
         <button onclick="window.print()" class="btn btn-secondary">
             <i class="fas fa-print"></i> Imprimer
         </button>
-        <button onclick="exportToCSV()" class="btn btn-success">
-            <i class="fas fa-file-excel"></i> Exporter CSV
-        </button>
+        <div class="btn-group ms-2">
+            <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="fas fa-download"></i> Exporter
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="export.php?type=<?php echo $report_type; ?>&format=csv">
+                    <i class="fas fa-file-csv"></i> Format CSV
+                </a></li>
+                <li><a class="dropdown-item" href="export.php?type=<?php echo $report_type; ?>&format=excel">
+                    <i class="fas fa-file-excel"></i> Format Excel
+                </a></li>
+            </ul>
+        </div>
     </div>
 </div>
 

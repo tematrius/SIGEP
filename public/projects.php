@@ -14,6 +14,10 @@ try {
     $search = $_GET['search'] ?? '';
     $status = $_GET['status'] ?? '';
     $location = $_GET['location'] ?? '';
+    $date_from = $_GET['date_from'] ?? '';
+    $date_to = $_GET['date_to'] ?? '';
+    $sort_by = $_GET['sort_by'] ?? 'created_at';
+    $sort_order = $_GET['sort_order'] ?? 'DESC';
     
     $sql = "SELECT p.*, l.name as location_name, u.full_name as creator_name,
             (SELECT COUNT(*) FROM tasks WHERE project_id = p.id) as task_count,
@@ -41,7 +45,24 @@ try {
         $params[] = $location;
     }
     
-    $sql .= " ORDER BY p.created_at DESC";
+    if (!empty($date_from)) {
+        $sql .= " AND p.start_date >= ?";
+        $params[] = $date_from;
+    }
+    
+    if (!empty($date_to)) {
+        $sql .= " AND p.end_date <= ?";
+        $params[] = $date_to;
+    }
+    
+    // Tri sécurisé
+    $allowedSort = ['created_at', 'title', 'status', 'start_date', 'end_date'];
+    if (!in_array($sort_by, $allowedSort)) {
+        $sort_by = 'created_at';
+    }
+    $sort_order = $sort_order === 'ASC' ? 'ASC' : 'DESC';
+    
+    $sql .= " ORDER BY p.$sort_by $sort_order";
     
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
@@ -69,16 +90,22 @@ ob_start();
 
 <!-- Filtres -->
 <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-filter"></i> Filtres</h5>
+        <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#advancedFilters">
+            <i class="fas fa-cog"></i> Filtres avancés
+        </button>
+    </div>
     <div class="card-body">
         <form method="GET" class="row g-3">
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="form-label">Recherche</label>
                 <input type="text" name="search" class="form-control" placeholder="Titre ou description..." value="<?php echo e($search); ?>">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label">Statut</label>
                 <select name="status" class="form-select">
-                    <option value="">Tous les statuts</option>
+                    <option value="">Tous</option>
                     <option value="prevu" <?php echo $status === 'prevu' ? 'selected' : ''; ?>>Prévu</option>
                     <option value="en_cours" <?php echo $status === 'en_cours' ? 'selected' : ''; ?>>En cours</option>
                     <option value="suspendu" <?php echo $status === 'suspendu' ? 'selected' : ''; ?>>Suspendu</option>
@@ -89,7 +116,7 @@ ob_start();
             <div class="col-md-3">
                 <label class="form-label">Localisation</label>
                 <select name="location" class="form-select">
-                    <option value="">Toutes les localisations</option>
+                    <option value="">Toutes</option>
                     <?php foreach ($locations as $loc): ?>
                         <option value="<?php echo $loc['id']; ?>" <?php echo $location == $loc['id'] ? 'selected' : ''; ?>>
                             <?php echo e($loc['name']); ?>
@@ -97,12 +124,60 @@ ob_start();
                     <?php endforeach; ?>
                 </select>
             </div>
+            <div class="col-md-2">
+                <label class="form-label">Trier par</label>
+                <select name="sort_by" class="form-select">
+                    <option value="created_at" <?php echo $sort_by === 'created_at' ? 'selected' : ''; ?>>Date création</option>
+                    <option value="title" <?php echo $sort_by === 'title' ? 'selected' : ''; ?>>Titre</option>
+                    <option value="status" <?php echo $sort_by === 'status' ? 'selected' : ''; ?>>Statut</option>
+                    <option value="start_date" <?php echo $sort_by === 'start_date' ? 'selected' : ''; ?>>Date début</option>
+                    <option value="end_date" <?php echo $sort_by === 'end_date' ? 'selected' : ''; ?>>Date fin</option>
+                </select>
+            </div>
             <div class="col-md-2 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="fas fa-search"></i> Filtrer
-                </button>
+                <div class="btn-group w-100">
+                    <button type="submit" name="sort_order" value="<?php echo $sort_order === 'ASC' ? 'DESC' : 'ASC'; ?>" class="btn btn-outline-secondary">
+                        <i class="fas fa-sort-<?php echo $sort_order === 'ASC' ? 'up' : 'down'; ?>"></i>
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Filtrer
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Filtres avancés (collapsible) -->
+            <div class="collapse col-12" id="advancedFilters">
+                <hr>
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Date début (de)</label>
+                        <input type="date" name="date_from" class="form-control" value="<?php echo e($date_from); ?>">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Date fin (à)</label>
+                        <input type="date" name="date_to" class="form-control" value="<?php echo e($date_to); ?>">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <a href="projects.php" class="btn btn-secondary w-100">
+                            <i class="fas fa-times"></i> Réinitialiser
+                        </a>
+                    </div>
+                </div>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- Statistiques -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle"></i> 
+            <strong><?php echo count($projects); ?></strong> projet(s) trouvé(s)
+            <?php if ($search || $status || $location || $date_from || $date_to): ?>
+                - <a href="projects.php" class="alert-link">Effacer les filtres</a>
+            <?php endif; ?>
+        </div>
     </div>
 </div>
 

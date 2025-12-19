@@ -57,10 +57,14 @@
                                 <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>users.php"><i class="fas fa-users"></i> Utilisateurs</a></li>
                             </ul>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="<?php echo BASE_URL; ?>reports.php">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown">
                                 <i class="fas fa-chart-bar"></i> Rapports
                             </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>reports.php"><i class="fas fa-file-alt"></i> Rapports</a></li>
+                                <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>analytics.php"><i class="fas fa-chart-line"></i> Analyses</a></li>
+                            </ul>
                         </li>
                     </ul>
                     <ul class="navbar-nav">
