@@ -12,6 +12,32 @@ if (!$id) {
     redirect('tasks.php');
 }
 
+// Fonction pour traiter les mentions @user
+function processMentions($text, $pdo) {
+    // Trouver toutes les mentions @username
+    preg_match_all('/@(\w+)/', $text, $matches);
+    
+    if (!empty($matches[1])) {
+        foreach ($matches[1] as $username) {
+            // Vérifier si l'utilisateur existe
+            $stmt = $pdo->prepare("SELECT id, full_name FROM users WHERE username = ? AND is_active = 1");
+            $stmt->execute([$username]);
+            $user = $stmt->fetch();
+            
+            if ($user) {
+                // Remplacer @username par un lien HTML
+                $text = str_replace(
+                    '@' . $username, 
+                    '<span class="badge bg-primary">@' . $username . '</span> <small class="text-muted">(' . e($user['full_name']) . ')</small>',
+                    $text
+                );
+            }
+        }
+    }
+    
+    return $text;
+}
+
 $pageTitle = 'Détails de la Tâche';
 
 try {
@@ -458,7 +484,8 @@ ob_start();
                     <input type="hidden" name="task_id" value="<?php echo $task['id']; ?>">
                     <div class="mb-3">
                         <label class="form-label">Commentaire *</label>
-                        <textarea class="form-control" name="comment" id="commentText" rows="3" placeholder="Ajouter un commentaire..." required></textarea>
+                        <textarea class="form-control" name="comment" id="commentText" rows="3" placeholder="Ajouter un commentaire... (utilisez @username pour mentionner un utilisateur)" required></textarea>
+                        <div id="mentionSuggestions" class="list-group mt-1" style="display: none; position: absolute; z-index: 1000; max-height: 200px; overflow-y: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.15);"></div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">
@@ -490,7 +517,7 @@ ob_start();
                                     <small class="text-muted">
                                         <i class="fas fa-clock"></i> <?php echo date('d/m/Y H:i', strtotime($comment['created_at'])); ?>
                                     </small>
-                                </div>
+                                </div>processMentions(nl2br(e($comment['comment'])), $pdo
                                 <p class="mt-2 mb-2"><?php echo nl2br(e($comment['comment'])); ?></p>
                                 
                                 <?php if (!empty($comment['attachments'])): ?>
