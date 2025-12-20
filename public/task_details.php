@@ -80,6 +80,11 @@ try {
     $stmtDocuments->execute([$id]);
     $documents = $stmtDocuments->fetchAll();
     
+    // Récupérer tous les utilisateurs actifs pour les mentions
+    $stmtUsers = $pdo->prepare("SELECT id, full_name, username FROM users WHERE is_active = 1 ORDER BY full_name");
+    $stmtUsers->execute();
+    $activeUsers = $stmtUsers->fetchAll();
+    
 } catch (PDOException $e) {
     setFlashMessage('error', 'Erreur lors du chargement de la tâche');
     redirect('tasks.php');
