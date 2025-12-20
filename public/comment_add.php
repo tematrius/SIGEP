@@ -35,8 +35,52 @@ try {
     ");
     $stmt->execute([$task_id, $_SESSION['user_id'], trim($comment)]);
     
-    // Récupérer le commentaire créé
     $comment_id = $pdo->lastInsertId();
+    
+    // Traiter les pièces jointes si présentes
+    $attachments = [];
+    if (!empty($_FILES['attachments']['name'][0])) {
+        $uploadDir = '../uploads/comment_attachments/';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+        
+        $fileCount = count($_FILES['attachments']['name']);
+        for ($i = 0; $i < $fileCount; $i++) {
+            if ($_FILES['attachments']['error'][$i] === UPLOAD_ERR_OK) {
+                $fileName = $_FILES['attachments']['name'][$i];
+                $fileSize = $_FILES['attachments']['size'][$i];
+                $fileTmp = $_FILES['attachments']['tmp_name'][$i];
+                
+                // Vérifier la taille (10MB max)
+                if ($fileSize > 10 * 1024 * 1024) {
+                    continue;
+                }
+                
+                // Générer un nom unique
+                $ext = pathinfo($fileName, PATHINFO_EXTENSION);
+                $uniqueName = uniqid('comment_') . '_' . time() . '.' . $ext;
+                $filePath = $uploadDir . $uniqueName;
+                
+                if (move_uploaded_file($fileTmp, $filePath)) {
+                    // Enregistrer dans la base de données
+                    $stmt = $pdo->prepare("
+                        INSERT INTO comment_attachments (comment_id, file_name, file_path, file_size)
+                        VALUES (?, ?, ?, ?)
+                    ");
+                    $stmt->execute([$comment_id, $fileName, $filePath, $fileSize]);
+                    
+                    $attachments[] = [
+                        'id' => $pdo->lastInsertId(),
+                        'file_name' => $fileName,
+                        'file_size' => $fileSize
+                    ];
+                }
+            }
+        }
+    }
+    
+    // Récupérer le commentaire créé avec ses pièces jointes
     $stmt = $pdo->prepare("
         SELECT c.*, u.full_name as user_name
         FROM comments c
@@ -47,7 +91,8 @@ try {
     $new_comment = $stmt->fetch();
     
     // Log l'activité
-    logActivity('comment_created', 'Commentaire ajouté sur la tâche #' . $task_id);
+    $attachText = count($attachments) > 0 ? ' avec ' . count($attachments) . ' pièce(s) jointe(s)' : '';
+    logActivity('Commentaire ajouté sur la tâche #' . $task_id . $attachText, 'comment', $comment_id);
     
     echo json_encode([
         'success' => true,
@@ -57,7 +102,8 @@ try {
             'user_name' => $new_comment['user_name'],
             'comment' => $new_comment['comment'],
             'created_at' => $new_comment['created_at'],
-            'formatted_date' => date('d/m/Y H:i', strtotime($new_comment['created_at']))
+            'formatted_date' => date('d/m/Y H:i', strtotime($new_comment['created_at'])),
+            'attachments' => $attachments
         ]
     ]);
     
