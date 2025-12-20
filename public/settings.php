@@ -12,43 +12,6 @@ if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], $allowedRoles)) {
     redirect('dashboard.php');
 }
 
-// Gestion du cache
-if (isset($_GET['action']) && $_GET['action'] === 'clear_cache') {
-    $cacheCleared = false;
-    $cacheFiles = 0;
-    
-    // Vider le cache de session PHP
-    session_regenerate_id(true);
-    
-    // Nettoyer les anciennes sessions
-    $sessPath = session_save_path();
-    if (!empty($sessPath) && is_dir($sessPath)) {
-        $files = glob($sessPath . '/sess_*');
-        $now = time();
-        foreach ($files as $file) {
-            if (is_file($file) && ($now - filemtime($file)) > 3600) { // Plus d'1 heure
-                if (@unlink($file)) {
-                    $cacheFiles++;
-                }
-            }
-        }
-    }
-    
-    // Nettoyer les fichiers temporaires
-    $tempDir = sys_get_temp_dir();
-    $tempFiles = glob($tempDir . '/php*');
-    foreach ($tempFiles as $file) {
-        if (is_file($file) && (time() - filemtime($file)) > 86400) { // Plus d'1 jour
-            @unlink($file);
-        }
-    }
-    
-    $cacheCleared = true;
-    logActivity('Cache système vidé', 'system', 0);
-    setFlashMessage('success', "Cache vidé avec succès! {$cacheFiles} fichiers de session nettoyés.");
-    redirect('settings.php');
-}
-
 $pageTitle = 'Paramètres du Système';
 
 try {
@@ -268,9 +231,9 @@ ob_start();
                             <a href="reports.php" class="btn btn-info">
                                 <i class="fas fa-chart-bar"></i> Voir les rapports
                             </a>
-                            <a href="settings.php?action=clear_cache" class="btn btn-warning" onclick="return confirm('Voulez-vous vraiment vider le cache? Cela peut déconnecter certains utilisateurs.');">
+                            <button class="btn btn-warning" onclick="if(confirm('Voulez-vous vraiment vider le cache?')) alert('Cache vidé (fonctionnalité à implémenter)');">
                                 <i class="fas fa-broom"></i> Vider le cache
-                            </a>
+                            </button>
                         </div>
                     </div>
                 </div>

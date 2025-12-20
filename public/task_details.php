@@ -12,32 +12,6 @@ if (!$id) {
     redirect('tasks.php');
 }
 
-// Fonction pour traiter les mentions @user
-function processMentions($text, $pdo) {
-    // Trouver toutes les mentions @username
-    preg_match_all('/@(\w+)/', $text, $matches);
-    
-    if (!empty($matches[1])) {
-        foreach ($matches[1] as $username) {
-            // Vérifier si l'utilisateur existe
-            $stmt = $pdo->prepare("SELECT id, full_name FROM users WHERE username = ? AND is_active = 1");
-            $stmt->execute([$username]);
-            $user = $stmt->fetch();
-            
-            if ($user) {
-                // Remplacer @username par un lien HTML
-                $text = str_replace(
-                    '@' . $username, 
-                    '<span class="badge bg-primary">@' . $username . '</span> <small class="text-muted">(' . e($user['full_name']) . ')</small>',
-                    $text
-                );
-            }
-        }
-    }
-    
-    return $text;
-}
-
 $pageTitle = 'Détails de la Tâche';
 
 try {
@@ -72,7 +46,7 @@ try {
     $stmtSubtasks->execute([$id]);
     $subtasks = $stmtSubtasks->fetchAll();
     
-    // Récupérer les commentaires avec leurs pièces jointes
+    // Récupérer les commentaires
     $stmtComments = $pdo->prepare("
         SELECT c.*, u.full_name as user_name
         FROM comments c
@@ -82,18 +56,6 @@ try {
     ");
     $stmtComments->execute([$id]);
     $comments = $stmtComments->fetchAll();
-    
-    // Récupérer les pièces jointes pour chaque commentaire
-    foreach ($comments as &$comment) {
-        $stmtAttachments = $pdo->prepare("
-            SELECT * FROM comment_attachments
-            WHERE comment_id = ?
-            ORDER BY created_at ASC
-        ");
-        $stmtAttachments->execute([$comment['id']]);
-        $comment['attachments'] = $stmtAttachments->fetchAll();
-    }
-    unset($comment);
     
     // Récupérer les documents justificatifs
     $stmtDocuments = $pdo->prepare("
@@ -105,11 +67,6 @@ try {
     ");
     $stmtDocuments->execute([$id]);
     $documents = $stmtDocuments->fetchAll();
-    
-    // Récupérer tous les utilisateurs actifs pour les mentions
-    $stmtUsers = $pdo->prepare("SELECT id, full_name, username FROM users WHERE is_active = 1 ORDER BY full_name");
-    $stmtUsers->execute();
-    $activeUsers = $stmtUsers->fetchAll();
     
 } catch (PDOException $e) {
     setFlashMessage('error', 'Erreur lors du chargement de la tâche');
@@ -480,68 +437,29 @@ ob_start();
             </div>
             <div class="card-body">
                 <!-- Formulaire d'ajout de commentaire -->
-                <form id="commentForm" enctype="multipart/form-data" class="mb-4">
-                    <input type="hidden" name="task_id" value="<?php echo $task['id']; ?>">
+                <form method="POST" action="" class="mb-4">
                     <div class="mb-3">
-                        <label class="form-label">Commentaire *</label>
-                        <textarea class="form-control" name="comment" id="commentText" rows="3" placeholder="Ajouter un commentaire... (utilisez @username pour mentionner un utilisateur)" required></textarea>
-                        <div id="mentionSuggestions" class="list-group mt-1" style="display: none; position: absolute; z-index: 1000; max-height: 200px; overflow-y: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.15);"></div>
+                        <textarea class="form-control" name="comment" rows="3" placeholder="Ajouter un commentaire..." required></textarea>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">
-                            <i class="fas fa-paperclip"></i> Pièces jointes (optionnel)
-                        </label>
-                        <input type="file" class="form-control" name="attachments[]" id="commentAttachments" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png">
-                        <small class="text-muted">Maximum 10 MB par fichier. Formats acceptés: PDF, Word, Excel, Images</small>
-                        <div id="fileList" class="mt-2"></div>
-                    </div>
-                    <button type="submit" class="btn btn-primary" id="submitCommentBtn">
+                    <button type="submit" name="add_comment" class="btn btn-primary">
                         <i class="fas fa-paper-plane"></i> Ajouter un commentaire
                     </button>
-                    <div id="uploadProgress" class="mt-2" style="display: none;">
-                        <div class="progress">
-                            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
-                        </div>
-                    </div>
                 </form>
                 
-                <div id="commentsList">
-                    <!-- Liste des commentaires -->
-                    <?php if (empty($comments)): ?>
-                        <p class="text-muted text-center">Aucun commentaire pour le moment</p>
-                    <?php else: ?>
-                        <?php foreach ($comments as $comment): ?>
-                            <div class="border-bottom pb-3 mb-3">
-                                <div class="d-flex justify-content-between">
-                                    <strong><i class="fas fa-user-circle"></i> <?php echo e($comment['user_name']); ?></strong>
-                                    <small class="text-muted">
-                                        <i class="fas fa-clock"></i> <?php echo date('d/m/Y H:i', strtotime($comment['created_at'])); ?>
-                                    </small>
-                                </div>processMentions(nl2br(e($comment['comment'])), $pdo
-                                <p class="mt-2 mb-2"><?php echo nl2br(e($comment['comment'])); ?></p>
-                                
-                                <?php if (!empty($comment['attachments'])): ?>
-                                    <div class="mt-2">
-                                        <small class="text-muted"><i class="fas fa-paperclip"></i> Pièces jointes:</small>
-                                        <div class="d-flex flex-wrap gap-2 mt-1">
-                                            <?php foreach ($comment['attachments'] as $attachment): ?>
-                                                <a href="comment_attachment_download.php?id=<?php echo $attachment['id']; ?>" 
-                                                   class="btn btn-sm btn-outline-primary" 
-                                                   title="<?php echo e($attachment['file_name']); ?> (<?php echo round($attachment['file_size'] / 1024, 1); ?> KB)">
-                                                    <i class="fas fa-download"></i> 
-                                                    <?php 
-                                                    $filename = $attachment['file_name'];
-                                                    echo e(strlen($filename) > 20 ? substr($filename, 0, 17) . '...' : $filename);
-                                                    ?>
-                                                </a>
-                                            <?php endforeach; ?>
-                                        </div>
-                                    </div>
-                                <?php endif; ?>
+                <!-- Liste des commentaires -->
+                <?php if (empty($comments)): ?>
+                    <p class="text-muted text-center">Aucun commentaire pour le moment</p>
+                <?php else: ?>
+                    <?php foreach ($comments as $comment): ?>
+                        <div class="border-bottom pb-3 mb-3">
+                            <div class="d-flex justify-content-between">
+                                <strong><?php echo e($comment['user_name']); ?></strong>
+                                <small class="text-muted"><?php echo date('d/m/Y H:i', strtotime($comment['created_at'])); ?></small>
                             </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </div>
+                            <p class="mt-2 mb-0"><?php echo nl2br(e($comment['comment'])); ?></p>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -570,120 +488,6 @@ ob_start();
         </div>
     </div>
 </div>
-
-<script>
-// Afficher les fichiers sélectionnés
-document.getElementById('commentAttachments').addEventListener('change', function(e) {
-    const fileList = document.getElementById('fileList');
-    fileList.innerHTML = '';
-    
-    if (this.files.length > 0) {
-        const ul = document.createElement('ul');
-        ul.className = 'list-group list-group-flush';
-        
-        Array.from(this.files).forEach(file => {
-            const li = document.createElement('li');
-            li.className = 'list-group-item d-flex justify-content-between align-items-center py-1 px-2';
-            li.innerHTML = `
-                <small><i class="fas fa-file"></i> ${file.name}</small>
-                <small class="text-muted">${(file.size / 1024).toFixed(1)} KB</small>
-            `;
-            ul.appendChild(li);
-        });
-        
-        fileList.appendChild(ul);
-    }
-});
-
-// Soumettre le formulaire de commentaire via AJAX
-document.getElementById('commentForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const submitBtn = document.getElementById('submitCommentBtn');
-    const progressDiv = document.getElementById('uploadProgress');
-    const progressBar = progressDiv.querySelector('.progress-bar');
-    
-    // Désactiver le bouton et afficher la progression
-    submitBtn.disabled = true;
-    progressDiv.style.display = 'block';
-    progressBar.style.width = '30%';
-    
-    fetch('comment_add.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        progressBar.style.width = '100%';
-        
-        if (data.success) {
-            // Réinitialiser le formulaire
-            document.getElementById('commentText').value = '';
-            document.getElementById('commentAttachments').value = '';
-            document.getElementById('fileList').innerHTML = '';
-            
-            // Ajouter le nouveau commentaire à la liste
-            const commentsList = document.getElementById('commentsList');
-            const emptyMessage = commentsList.querySelector('.text-muted.text-center');
-            if (emptyMessage) {
-                emptyMessage.remove();
-            }
-            
-            let attachmentsHtml = '';
-            if (data.comment.attachments && data.comment.attachments.length > 0) {
-                attachmentsHtml = `
-                    <div class="mt-2">
-                        <small class="text-muted"><i class="fas fa-paperclip"></i> Pièces jointes:</small>
-                        <div class="d-flex flex-wrap gap-2 mt-1">
-                            ${data.comment.attachments.map(att => `
-                                <a href="comment_attachment_download.php?id=${att.id}" 
-                                   class="btn btn-sm btn-outline-primary" 
-                                   title="${att.file_name} (${(att.file_size / 1024).toFixed(1)} KB)">
-                                    <i class="fas fa-download"></i> 
-                                    ${att.file_name.length > 20 ? att.file_name.substr(0, 17) + '...' : att.file_name}
-                                </a>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
-            }
-            
-            const newComment = document.createElement('div');
-            newComment.className = 'border-bottom pb-3 mb-3';
-            newComment.innerHTML = `
-                <div class="d-flex justify-content-between">
-                    <strong><i class="fas fa-user-circle"></i> ${data.comment.user_name}</strong>
-                    <small class="text-muted">
-                        <i class="fas fa-clock"></i> ${data.comment.formatted_date}
-                    </small>
-                </div>
-                <p class="mt-2 mb-2">${data.comment.comment.replace(/\n/g, '<br>')}</p>
-                ${attachmentsHtml}
-            `;
-            
-            commentsList.insertBefore(newComment, commentsList.firstChild);
-            
-            // Message de succès
-            alert('✓ Commentaire ajouté avec succès!');
-        } else {
-            alert('✗ Erreur: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('✗ Une erreur est survenue lors de l\'ajout du commentaire');
-    })
-    .finally(() => {
-        // Réactiver le bouton et cacher la progression
-        setTimeout(() => {
-            submitBtn.disabled = false;
-            progressDiv.style.display = 'none';
-            progressBar.style.width = '0%';
-        }, 500);
-    });
-});
-</script>
 
 <?php
 $content = ob_get_clean();

@@ -84,6 +84,17 @@ try {
     $total_planned = array_sum(array_column($budget_items, 'planned_amount'));
     $total_spent = array_sum(array_column($budget_items, 'spent_amount'));
     
+    // Récupérer les jalons (milestones)
+    $stmtMilestones = $pdo->prepare("
+        SELECT m.*, u.full_name as created_by_name
+        FROM milestones m
+        JOIN users u ON m.created_by = u.id
+        WHERE m.project_id = ?
+        ORDER BY m.order_number ASC, m.due_date ASC
+    ");
+    $stmtMilestones->execute([$id]);
+    $milestones = $stmtMilestones->fetchAll();
+    
 } catch (PDOException $e) {
     setFlashMessage('error', 'Erreur lors du chargement du projet');
     redirect('projects.php');
@@ -272,6 +283,106 @@ ob_start();
                 <?php endif; ?>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Jalons du Projet (Milestones) -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-flag-checkered"></i> Jalons du Projet</span>
+        <a href="milestone_create.php?project_id=<?php echo $project['id']; ?>" class="btn btn-sm btn-success">
+            <i class="fas fa-plus"></i> Ajouter un Jalon
+        </a>
+    </div>
+    <div class="card-body">
+        <?php if (empty($milestones)): ?>
+            <p class="text-center text-muted py-3">
+                <i class="fas fa-flag-checkered fa-3x mb-3 d-block"></i>
+                Aucun jalon défini pour ce projet
+            </p>
+        <?php else: ?>
+            <div class="milestone-timeline">
+                <?php foreach ($milestones as $index => $milestone): ?>
+                    <?php
+                    $statusClasses = [
+                        'pending' => 'secondary',
+                        'in_progress' => 'primary',
+                        'completed' => 'success',
+                        'delayed' => 'danger'
+                    ];
+                    $statusLabels = [
+                        'pending' => 'En attente',
+                        'in_progress' => 'En cours',
+                        'completed' => 'Complété',
+                        'delayed' => 'En retard'
+                    ];
+                    $statusClass = $statusClasses[$milestone['status']];
+                    $isOverdue = $milestone['status'] !== 'completed' && strtotime($milestone['due_date']) < time();
+                    ?>
+                    
+                    <div class="milestone-item border-start border-<?php echo $statusClass; ?> border-3 ps-4 pb-4 position-relative">
+                        <!-- Icône du jalon -->
+                        <div class="milestone-icon position-absolute" style="left: -12px; top: 0;">
+                            <span class="badge rounded-pill bg-<?php echo $statusClass; ?>" style="width: 24px; height: 24px; padding: 6px;">
+                                <?php if ($milestone['status'] === 'completed'): ?>
+                                    <i class="fas fa-check"></i>
+                                <?php else: ?>
+                                    <?php echo $index + 1; ?>
+                                <?php endif; ?>
+                            </span>
+                        </div>
+                        
+                        <!-- Contenu du jalon -->
+                        <div class="milestone-content">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h5 class="mb-1">
+                                        <?php echo e($milestone['title']); ?>
+                                        <?php if ($isOverdue): ?>
+                                            <span class="badge bg-danger ms-2">
+                                                <i class="fas fa-exclamation-triangle"></i> En retard
+                                            </span>
+                                        <?php endif; ?>
+                                    </h5>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar"></i> 
+                                        Échéance: <?php echo date('d/m/Y', strtotime($milestone['due_date'])); ?>
+                                        <?php if ($milestone['completion_date']): ?>
+                                            | <i class="fas fa-check-circle text-success"></i> 
+                                            Complété le <?php echo date('d/m/Y', strtotime($milestone['completion_date'])); ?>
+                                        <?php endif; ?>
+                                    </small>
+                                </div>
+                                <div>
+                                    <span class="badge bg-<?php echo $statusClass; ?>">
+                                        <?php echo $statusLabels[$milestone['status']]; ?>
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <?php if ($milestone['description']): ?>
+                                <p class="text-muted mb-2"><?php echo nl2br(e($milestone['description'])); ?></p>
+                            <?php endif; ?>
+                            
+                            <?php if ($milestone['deliverables']): ?>
+                                <div class="mt-2">
+                                    <strong class="text-muted small">Livrables attendus:</strong>
+                                    <div class="ms-3 small text-muted">
+                                        <?php echo nl2br(e($milestone['deliverables'])); ?>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                            
+                            <div class="mt-2">
+                                <a href="milestone_edit.php?id=<?php echo $milestone['id']; ?>" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit"></i> Modifier
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
     </div>
 </div>
 

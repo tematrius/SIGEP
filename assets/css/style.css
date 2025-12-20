@@ -454,3 +454,59 @@ html {
 * {
     transition: background-color 0.2s, color 0.2s, border-color 0.2s;
 }
+/* ===== Milestone Timeline Styles ===== */
+.milestone-timeline {
+    position: relative;
+    padding: 1rem 0;
+}
+
+.milestone-item {
+    position: relative;
+    margin-bottom: 0;
+}
+
+.milestone-item:last-child {
+    border-left: none !important;
+    padding-bottom: 0 !important;
+}
+
+.milestone-icon {
+    background-color: #fff;
+    z-index: 2;
+}
+
+.milestone-icon .badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+}
+
+.milestone-content {
+    padding: 0.5rem 0;
+}
+
+.milestone-content h5 {
+    color: #333;
+    font-weight: 600;
+}
+
+.milestone-item:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+    padding-left: 1.5rem !important;
+}
+
+/* Responsive pour milestone */
+@media (max-width: 576px) {
+    .milestone-content h5 {
+        font-size: 1rem;
+    }
+    
+    .milestone-item {
+        padding-left: 2rem !important;
+    }
+    
+    .milestone-icon {
+        left: -10px !important;
+    }
+}

@@ -154,6 +154,41 @@ try {
         ];
     }
     
+    // Jalons (Milestones)
+    $stmt = $pdo->prepare("
+        SELECT m.*, u.full_name as creator_name
+        FROM milestones m
+        JOIN users u ON m.created_by = u.id
+        WHERE m.project_id = ?
+        ORDER BY m.created_at
+    ");
+    $stmt->execute([$id]);
+    $milestones = $stmt->fetchAll();
+    
+    foreach ($milestones as $milestone) {
+        // Création du jalon
+        $timeline[] = [
+            'date' => $milestone['created_at'],
+            'type' => 'milestone_created',
+            'title' => 'Jalon créé',
+            'description' => 'Jalon "' . $milestone['title'] . '" créé par ' . $milestone['creator_name'] . ' (Échéance: ' . date('d/m/Y', strtotime($milestone['due_date'])) . ')',
+            'icon' => 'fa-flag-checkered',
+            'color' => 'primary'
+        ];
+        
+        // Complétion du jalon
+        if ($milestone['status'] === 'completed' && $milestone['completion_date']) {
+            $timeline[] = [
+                'date' => $milestone['completion_date'] . ' ' . date('H:i:s', strtotime($milestone['updated_at'])),
+                'type' => 'milestone_completed',
+                'title' => 'Jalon complété',
+                'description' => 'Jalon "' . $milestone['title'] . '" marqué comme complété',
+                'icon' => 'fa-check-circle',
+                'color' => 'success'
+            ];
+        }
+    }
+    
     // Changements de statut
     if ($project['updated_at'] != $project['created_at']) {
         $timeline[] = [
