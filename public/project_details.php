@@ -95,6 +95,22 @@ try {
     $stmtMilestones->execute([$id]);
     $milestones = $stmtMilestones->fetchAll();
     
+    // Récupérer les commentaires du projet
+    $stmtComments = $pdo->prepare("
+        SELECT pc.*, u.full_name as user_name, u.username
+        FROM project_comments pc
+        JOIN users u ON pc.user_id = u.id
+        WHERE pc.project_id = ?
+        ORDER BY pc.created_at DESC
+    ");
+    $stmtComments->execute([$id]);
+    $project_comments = $stmtComments->fetchAll();
+    
+    // Récupérer tous les utilisateurs pour les mentions
+    $stmtUsers = $pdo->prepare("SELECT id, username, full_name FROM users WHERE is_active = 1");
+    $stmtUsers->execute();
+    $all_users = $stmtUsers->fetchAll();
+    
 } catch (PDOException $e) {
     setFlashMessage('error', 'Erreur lors du chargement du projet');
     redirect('projects.php');
@@ -518,7 +534,324 @@ ob_start();
 </div>
 <?php endif; ?>
 
-<?php
-$content = ob_get_clean();
-include '../views/layouts/main.php';
-?>
+<!-- Commentaires du Projet -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="fas fa-comments"></i> Commentaires et Discussions
+    </div>
+    <div class="card-body">
+        <!-- Formulaire d'ajout de commentaire -->
+        <div class="mb-4">
+            <form id="commentForm" onsubmit="return submitComment(event);">
+                <input type="hidden" name="project_id" value="<?php echo $project['id']; ?>">
+                
+                <div class="mb-3">
+                    <label for="comment" class="form-label">Ajouter un commentaire</label>
+                    <textarea class="form-control" id="comment" name="comment" rows="3" 
+                              placeholder="Écrivez votre commentaire... Utilisez @username pour mentionner un utilisateur" 
+                              required></textarea>
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i> 
+                        Mentionnez un utilisateur avec @username pour lui envoyer une notification
+                    </small>
+                </div>
+                
+                <!-- Suggestions de mentions -->
+                <div id="mentionSuggestions" class="list-group position-absolute" style="display: none; z-index: 1000; max-height: 200px; overflow-y: auto;"></div>
+                
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    <i class="fas fa-paper-plane"></i> Publier le commentaire
+                </button>
+            </form>
+        </div>
+        
+        <!-- Liste des commentaires -->
+        <div id="commentsList">
+            <?php if (empty($project_comments)): ?>
+                <div class="text-center text-muted py-4" id="noCommentsMsg">
+                    <i class="fas fa-comments fa-3x mb-3"></i>
+                    <p>Aucun commentaire pour le moment. Soyez le premier à commenter!</p>
+                </div>
+            <?php else: ?>
+                <?php foreach ($project_comments as $comment): ?>
+                    <div class="comment-item border-bottom pb-3 mb-3" data-comment-id="<?php echo $comment['id']; ?>">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="avatar-circle me-2">
+                                        <?php echo strtoupper(substr($comment['user_name'], 0, 1)); ?>
+                                    </div>
+                                    <div>
+                                        <strong><?php echo e($comment['user_name']); ?></strong>
+                                        <small class="text-muted ms-2">
+                                            <i class="fas fa-clock"></i> 
+                                            <?php echo date('d/m/Y H:i', strtotime($comment['created_at'])); ?>
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="comment-text">
+                                    <?php 
+                                    // Convertir les mentions @username en liens
+                                    $comment_text = e($comment['comment']);
+                                    $comment_text = preg_replace(
+                                        '/@(\w+)/', 
+                                        '<span class="mention">@$1</span>', 
+                                        $comment_text
+                                    );
+                                    echo nl2br($comment_text); 
+                                    ?>
+                                </div>
+                            </div>
+                            <?php if ($comment['user_id'] == $_SESSION['user_id'] || hasPermission('manage_all_projects')): ?>
+                                <button class="btn btn-sm btn-outline-danger ms-2" 
+                                        onclick="deleteComment(<?php echo $comment['id']; ?>)"
+                                        title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+    </div>
+</div>
+
+<script>
+// Variables globales
+const users = <?php echo json_encode($all_users); ?>;
+let mentionStart = -1;
+
+// Gestion des mentions
+document.getElementById('comment').addEventListener('input', function(e) {
+    const textarea = e.target;
+    const text = textarea.value;
+    const cursorPos = textarea.selectionStart;
+    
+    // Chercher le @ avant le curseur
+    const textBeforeCursor = text.substring(0, cursorPos);
+    const lastAtPos = textBeforeCursor.lastIndexOf('@');
+    
+    if (lastAtPos !== -1) {
+        const searchTerm = textBeforeCursor.substring(lastAtPos + 1).toLowerCase();
+        
+        // Vérifier qu'il n'y a pas d'espace après le @
+        if (searchTerm.indexOf(' ') === -1) {
+            mentionStart = lastAtPos;
+            showMentionSuggestions(searchTerm, textarea);
+            return;
+        }
+    }
+    
+    hideMentionSuggestions();
+});
+
+function showMentionSuggestions(searchTerm, textarea) {
+    const suggestions = users.filter(user => 
+        user.username.toLowerCase().includes(searchTerm) ||
+        user.full_name.toLowerCase().includes(searchTerm)
+    ).slice(0, 5);
+    
+    if (suggestions.length === 0) {
+        hideMentionSuggestions();
+        return;
+    }
+    
+    const suggestionsDiv = document.getElementById('mentionSuggestions');
+    suggestionsDiv.innerHTML = '';
+    
+    suggestions.forEach(user => {
+        const item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'list-group-item list-group-item-action';
+        item.innerHTML = `<strong>@${user.username}</strong> - ${user.full_name}`;
+        item.onclick = () => insertMention(user.username, textarea);
+        suggestionsDiv.appendChild(item);
+    });
+    
+    // Positionner les suggestions
+    const rect = textarea.getBoundingClientRect();
+    suggestionsDiv.style.top = (rect.bottom + 5) + 'px';
+    suggestionsDiv.style.left = rect.left + 'px';
+    suggestionsDiv.style.width = rect.width + 'px';
+    suggestionsDiv.style.display = 'block';
+}
+
+function hideMentionSuggestions() {
+    document.getElementById('mentionSuggestions').style.display = 'none';
+}
+
+function insertMention(username, textarea) {
+    const text = textarea.value;
+    const before = text.substring(0, mentionStart);
+    const after = text.substring(textarea.selectionStart);
+    
+    textarea.value = before + '@' + username + ' ' + after;
+    textarea.focus();
+    
+    const newCursorPos = before.length + username.length + 2;
+    textarea.setSelectionRange(newCursorPos, newCursorPos);
+    
+    hideMentionSuggestions();
+}
+
+// Soumettre le commentaire
+function submitComment(event) {
+    event.preventDefault();
+    
+    const form = event.target;
+    const submitBtn = document.getElementById('submitBtn');
+    const formData = new FormData(form);
+    
+    // Désactiver le bouton
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi...';
+    
+    fetch('project_comment_add.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Ajouter le commentaire à la liste
+            addCommentToList(data.comment);
+            
+            // Réinitialiser le formulaire
+            form.reset();
+            
+            // Masquer le message "aucun commentaire"
+            const noCommentsMsg = document.getElementById('noCommentsMsg');
+            if (noCommentsMsg) {
+                noCommentsMsg.remove();
+            }
+            
+            // Afficher un message de succès
+            showToast('Commentaire publié avec succès', 'success');
+        } else {
+            showToast(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showToast('Erreur lors de l\'ajout du commentaire', 'error');
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Publier le commentaire';
+    });
+    
+    return false;
+}
+
+function addCommentToList(comment) {
+    const commentsList = document.getElementById('commentsList');
+    
+    // Créer l'élément commentaire
+    const commentDiv = document.createElement('div');
+    commentDiv.className = 'comment-item border-bottom pb-3 mb-3';
+    commentDiv.setAttribute('data-comment-id', comment.id);
+    
+    // Convertir les mentions
+    let commentText = comment.comment.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    commentText = commentText.replace(/@(\w+)/g, '<span class="mention">@$1</span>');
+    commentText = commentText.replace(/\n/g, '<br>');
+    
+    commentDiv.innerHTML = `
+        <div class="d-flex justify-content-between align-items-start">
+            <div class="flex-grow-1">
+                <div class="d-flex align-items-center mb-2">
+                    <div class="avatar-circle me-2">
+                        ${comment.user_name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <strong>${comment.user_name}</strong>
+                        <small class="text-muted ms-2">
+                            <i class="fas fa-clock"></i> ${comment.formatted_date}
+                        </small>
+                    </div>
+                </div>
+                <div class="comment-text">
+                    ${commentText}
+                </div>
+            </div>
+            <button class="btn btn-sm btn-outline-danger ms-2" 
+                    onclick="deleteComment(${comment.id})"
+                    title="Supprimer">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `;
+    
+    // Insérer en haut de la liste
+    commentsList.insertBefore(commentDiv, commentsList.firstChild);
+}
+
+function deleteComment(commentId) {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer ce commentaire ?')) {
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('comment_id', commentId);
+    
+    fetch('project_comment_delete.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Supprimer l'élément du DOM
+            const commentEl = document.querySelector(`[data-comment-id="${commentId}"]`);
+            if (commentEl) {
+                commentEl.remove();
+            }
+            
+            // Si plus de commentaires, afficher le message
+            const commentsList = document.getElementById('commentsList');
+            if (commentsList.children.length === 0) {
+                commentsList.innerHTML = `
+                    <div class="text-center text-muted py-4" id="noCommentsMsg">
+                        <i class="fas fa-comments fa-3x mb-3"></i>
+                        <p>Aucun commentaire pour le moment. Soyez le premier à commenter!</p>
+                    </div>
+                `;
+            }
+            
+            showToast('Commentaire supprimé', 'success');
+        } else {
+            showToast(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showToast('Erreur lors de la suppression', 'error');
+    });
+}
+
+function showToast(message, type) {
+    // Utiliser le système de flash messages existant ou créer une alerte
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+    alertDiv.style.cssText = 'top: 80px; right: 20px; z-index: 9999; min-width: 300px;';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+
+// Fermer les suggestions en cliquant ailleurs
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#comment') && !e.target.closest('#mentionSuggestions')) {
+        hideMentionSuggestions();
+    }
+});
+</script>
+

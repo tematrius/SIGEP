@@ -510,3 +510,75 @@ html {
         left: -10px !important;
     }
 }
+/* ===== Project Comments Styles ===== */
+.comment-item {
+    transition: background-color 0.2s;
+}
+
+.comment-item:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+    padding: 0.5rem;
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+    border-radius: 0.25rem;
+}
+
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--info-color));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.comment-text {
+    color: #333;
+    line-height: 1.6;
+}
+
+.mention {
+    color: var(--primary-color);
+    font-weight: 600;
+    background-color: rgba(13, 110, 253, 0.1);
+    padding: 0.1rem 0.3rem;
+    border-radius: 0.25rem;
+}
+
+#mentionSuggestions {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid #ddd;
+    border-radius: 0.375rem;
+}
+
+#mentionSuggestions .list-group-item {
+    cursor: pointer;
+    border: none;
+    border-bottom: 1px solid #eee;
+}
+
+#mentionSuggestions .list-group-item:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+#mentionSuggestions .list-group-item:last-child {
+    border-bottom: none;
+}
+
+@media (max-width: 576px) {
+    .avatar-circle {
+        width: 32px;
+        height: 32px;
+        font-size: 1rem;
+    }
+    
+    .comment-text {
+        font-size: 0.9rem;
+    }
+}
+
