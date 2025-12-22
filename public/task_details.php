@@ -95,6 +95,9 @@ ob_start();
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="fas fa-tasks"></i> <?php echo e($task['title']); ?></h2>
     <div>
+        <a href="task_dependencies.php?task_id=<?php echo $task['id']; ?>" class="btn btn-primary">
+            <i class="fas fa-project-diagram"></i> Dépendances
+        </a>
         <a href="task_edit.php?id=<?php echo $task['id']; ?>" class="btn btn-warning">
             <i class="fas fa-edit"></i> Modifier
         </a>
