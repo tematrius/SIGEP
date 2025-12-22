@@ -122,6 +122,9 @@ ob_start();
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="fas fa-folder-open"></i> <?php echo e($project['title']); ?></h2>
     <div>
+        <a href="project_gantt.php?id=<?php echo $project['id']; ?>" class="btn btn-primary">
+            <i class="fas fa-chart-bar"></i> Gantt
+        </a>
         <a href="project_timeline.php?id=<?php echo $project['id']; ?>" class="btn btn-info">
             <i class="fas fa-history"></i> Timeline
         </a>
