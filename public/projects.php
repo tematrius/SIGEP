@@ -25,7 +25,7 @@ try {
             FROM projects p
             LEFT JOIN locations l ON p.location_id = l.id
             LEFT JOIN users u ON p.created_by = u.id
-            WHERE 1=1";
+            WHERE p.archived = FALSE";
     
     $params = [];
     
@@ -83,9 +83,14 @@ ob_start();
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="fas fa-folder-open"></i> Gestion des Projets</h2>
-    <a href="project_create.php" class="btn btn-primary">
-        <i class="fas fa-plus"></i> Nouveau Projet
-    </a>
+    <div>
+        <a href="archives.php" class="btn btn-secondary me-2">
+            <i class="fas fa-archive"></i> Archives
+        </a>
+        <a href="project_create.php" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Nouveau Projet
+        </a>
+    </div>
 </div>
 
 <!-- Filtres -->

@@ -21,7 +21,8 @@ try {
     $stmt = $pdo->prepare("
         SELECT p.*, l.name as location_name, 
                u1.full_name as creator_name, u2.full_name as updater_name,
-               COALESCE((SELECT AVG(progress) FROM tasks WHERE project_id = p.id), 0) as calculated_progress
+               COALESCE((SELECT AVG(progress) FROM tasks WHERE project_id = p.id), 0) as calculated_progress,
+               p.archived, p.archived_at, p.archived_by, p.archive_reason
         FROM projects p
         LEFT JOIN locations l ON p.location_id = l.id
         LEFT JOIN users u1 ON p.created_by = u1.id
@@ -134,6 +135,16 @@ ob_start();
         <a href="project_edit.php?id=<?php echo $project['id']; ?>" class="btn btn-warning">
             <i class="fas fa-edit"></i> Modifier
         </a>
+        <?php if (!$project['archived'] && ($project['status'] === 'completed' || $project['status'] === 'cancelled') && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'gestionnaire')): ?>
+        <a href="project_archive.php?id=<?php echo $project['id']; ?>" class="btn btn-secondary">
+            <i class="fas fa-archive"></i> Archiver
+        </a>
+        <?php endif; ?>
+        <?php if ($project['archived'] && ($_SESSION['role'] === 'admin' || $_SESSION['role'] === 'gestionnaire')): ?>
+        <span class="badge bg-secondary" style="font-size: 1em; padding: 8px 15px;">
+            <i class="fas fa-archive"></i> Archivé
+        </span>
+        <?php endif; ?>
         <a href="projects.php" class="btn btn-secondary">
             <i class="fas fa-arrow-left"></i> Retour
         </a>

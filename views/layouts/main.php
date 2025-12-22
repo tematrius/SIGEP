@@ -10,7 +10,7 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="<?php echo BASE_URL; ?>assets/css/style.css">
+    <link rel="stylesheet" href="<?php echo str_replace('/public/', '/', BASE_URL); ?>assets/css/style.css">
     
     <?php if (isset($extraCSS)): ?>
         <?php echo $extraCSS; ?>
@@ -37,6 +37,16 @@
                         <li class="nav-item">
                             <a class="nav-link" href="<?php echo BASE_URL; ?>projects.php">
                                 <i class="fas fa-folder-open"></i> Projets
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="<?php echo BASE_URL; ?>project_map.php">
+                                <i class="fas fa-map-marked-alt"></i> Carte
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="<?php echo BASE_URL; ?>archives.php">
+                                <i class="fas fa-archive"></i> Archives
                             </a>
                         </li>
                         <li class="nav-item">
@@ -147,7 +157,7 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <!-- Custom JS -->
-    <script src="<?php echo BASE_URL; ?>assets/js/app.js"></script>
+    <script src="<?php echo str_replace('/public/', '/', BASE_URL); ?>assets/js/app.js"></script>
     
     <?php if (isset($extraJS)): ?>
         <?php echo $extraJS; ?>
