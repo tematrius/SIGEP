@@ -118,3 +118,22 @@ function logActivity($action, $entity_type = null, $entity_id = null) {
         // Ignorer les erreurs de log silencieusement
     }
 }
+
+/**
+ * Créer une notification pour un utilisateur
+ */
+function createNotification($user_id, $type, $message, $entity_type = null, $entity_id = null) {
+    try {
+        $pdo = getDbConnection();
+        $stmt = $pdo->prepare("
+            INSERT INTO notifications (user_id, type, message, entity_type, entity_id, is_read)
+            VALUES (?, ?, ?, ?, ?, 0)
+        ");
+        $stmt->execute([$user_id, $type, $message, $entity_type, $entity_id]);
+        return true;
+    } catch (PDOException $e) {
+        // Ignorer les erreurs de notification silencieusement
+        error_log("Erreur création notification: " . $e->getMessage());
+        return false;
+    }
+}

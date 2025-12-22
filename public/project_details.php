@@ -858,3 +858,8 @@ document.addEventListener('click', function(e) {
 });
 </script>
 
+<?php
+$content = ob_get_clean();
+$pageTitle = 'Détails du Projet - ' . $project['title'];
+include '../views/layouts/main.php';
+?>
