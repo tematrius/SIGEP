@@ -15,14 +15,12 @@ try {
             p.title,
             p.description,
             p.status,
-            p.priority,
             p.start_date,
             p.end_date,
             p.budget_validated,
             l.name as location_name,
             l.latitude,
             l.longitude,
-            l.province,
             u.full_name as creator_name,
             COALESCE(AVG(t.progress), 0) as calculated_progress,
             COUNT(DISTINCT t.id) as task_count
@@ -114,7 +112,7 @@ ob_start();
     </div>
     <div class="card-body">
         <div class="row g-3">
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label class="form-label">Statut</label>
                 <select class="form-select" id="filterStatus">
                     <option value="">Tous les statuts</option>
@@ -125,16 +123,7 @@ ob_start();
                     <option value="annule">Annulé</option>
                 </select>
             </div>
-            <div class="col-md-3">
-                <label class="form-label">Priorité</label>
-                <select class="form-select" id="filterPriority">
-                    <option value="">Toutes les priorités</option>
-                    <option value="high">Haute</option>
-                    <option value="medium">Moyenne</option>
-                    <option value="low">Basse</option>
-                </select>
-            </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label class="form-label">Province (<?php echo count($provinces); ?> disponibles)</label>
                 <select class="form-select" id="filterProvince" onchange="handleProvinceChange()">
                     <option value="">Toutes les provinces</option>
@@ -155,7 +144,7 @@ ob_start();
                     ?>
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <label class="form-label">&nbsp;</label>
                 <div class="d-grid">
                     <button type="button" class="btn btn-primary" onclick="applyFilters()">
@@ -412,7 +401,6 @@ if (allMarkers.length > 0) {
 // Fonction de filtrage
 function applyFilters() {
     const filterStatus = document.getElementById('filterStatus').value;
-    const filterPriority = document.getElementById('filterPriority').value;
     const filterProvince = document.getElementById('filterProvince').value;
     
     // Supprimer tous les marqueurs
@@ -427,9 +415,6 @@ function applyFilters() {
         let include = true;
         
         if (filterStatus && project.status !== filterStatus) {
-            include = false;
-        }
-        if (filterPriority && project.priority !== filterPriority) {
             include = false;
         }
         if (filterProvince && project.location_name !== filterProvince) {
