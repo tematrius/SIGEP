@@ -45,6 +45,11 @@
                             </a>
                         </li>
                         <li class="nav-item">
+                            <a class="nav-link" href="<?php echo BASE_URL; ?>project_calendar.php">
+                                <i class="fas fa-calendar-alt"></i> Calendrier
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link" href="<?php echo BASE_URL; ?>archives.php">
                                 <i class="fas fa-archive"></i> Archives
                             </a>
