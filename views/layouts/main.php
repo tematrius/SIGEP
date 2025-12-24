@@ -72,8 +72,9 @@
                                 <i class="fas fa-chart-bar"></i> Rapports
                             </a>
                             <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>executive_dashboard.php"><i class="fas fa-chart-line"></i> Dashboard Exécutif</a></li>
                                 <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>reports.php"><i class="fas fa-file-alt"></i> Rapports</a></li>
-                                <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>analytics.php"><i class="fas fa-chart-line"></i> Analyses</a></li>
+                                <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>analytics.php"><i class="fas fa-chart-pie"></i> Analyses</a></li>
                                 <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>export.php"><i class="fas fa-file-export"></i> Exporter</a></li>
                                 <li><a class="dropdown-item" href="<?php echo BASE_URL; ?>import.php"><i class="fas fa-file-import"></i> Importer</a></li>
