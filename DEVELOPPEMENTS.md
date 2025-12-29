@@ -494,5 +494,355 @@ logActivity($action, $entity_type, $entity_id)
 
 ---
 
-**Dernière mise à jour:** 23 décembre 2025  
-**Versions SIGEP:** 1.0 → 1.8
+**Dernière mise à jour:** 29 décembre 2025  
+**Versions SIGEP:** 1.0 → 2.3
+
+---
+
+## 📅 Session du 29 Décembre 2025 - Versions 1.9 à 2.3
+
+### Version 1.9 - Tableau de Bord Exécutif
+
+**Fichier créé:** `public/executive_dashboard.php` (680+ lignes)
+
+**Fonctionnalités:**
+- **8 KPIs principaux** affichés en cartes visuelles :
+  - Total projets, projets actifs, taux de complétion
+  - Budget total, budget dépensé, budget restant
+  - Total tâches, tâches complétées, tâches en retard
+  - Projets en retard nécessitant attention
+  
+- **4 Graphiques interactifs (Chart.js):**
+  - Évolution du budget sur 6 mois (Line chart)
+  - Top 10 projets par budget (Bar horizontal)
+  - Performance par province (Bar double axe)
+  - Risques par niveau de sévérité (Doughnut)
+  
+- **Tableau projets critiques:**
+  - Liste des projets en retard ou à risque élevé
+  - Indicateurs de santé avec code couleur (vert/jaune/rouge)
+  - Progression, tâches en retard, managers assignés
+  - Lien direct vers détails de chaque projet
+  
+- **Top 10 Performance utilisateurs:**
+  - Tâches assignées et complétées par utilisateur
+  - Taux de complétion en pourcentage
+  - Barre de progression visuelle
+  - Classification : Excellent / Bon / Moyen / À améliorer
+
+**Accès:** Menu Rapports → Dashboard Exécutif (Admin/Gestionnaire uniquement)
+
+**Export:** Fonction d'impression et export PDF intégrée
+
+---
+
+### Version 2.0 - Calendrier Interactif
+
+**Fichiers créés (3):**
+
+**1. `public/project_calendar.php` (360 lignes)**
+- Interface calendrier avec FullCalendar.js 6.1.8
+- Locale française
+- 4 vues disponibles :
+  - Mois (dayGridMonth)
+  - Semaine (timeGridWeek) 
+  - Jour (timeGridDay)
+  - Liste (listMonth)
+- Filtres multiples :
+  - Par projet
+  - Par utilisateur assigné
+  - Par type (tâches/jalons)
+- Modal de détails événement au clic
+- Édition drag & drop des dates
+
+**2. `public/calendar_events.php` (REST API)**
+- Endpoint JSON pour charger les événements
+- Récupération tâches avec :
+  - Titres, descriptions, dates
+  - Statuts, progression, assignations
+  - Liens vers projets parents
+- Récupération jalons (milestones)
+- Code couleur automatique selon statut :
+  - Tâches : bleu (en attente), jaune (en cours), vert (complété), rouge (retard/bloqué)
+  - Jalons : gris (en attente), cyan (en cours), vert (complété), rouge (retard)
+- Icône 🎯 pour différencier les jalons
+
+**3. `public/calendar_update.php` (REST API)**
+- Mise à jour des dates via drag & drop
+- Vérification des permissions :
+  - Admin/Gestionnaire : tous droits
+  - Utilisateur : ses propres tâches uniquement
+  - Chef projet : tâches de ses projets
+- Validation des données
+- Logging des modifications
+- Réponse JSON success/error
+
+**Accès:** Menu principal → Calendrier
+
+---
+
+### Version 2.1 - Gestion des Ressources
+
+**Fichiers créés (2):**
+
+**1. `database/create_resource_allocations.sql`**
+- Table `resource_allocations` pour affecter ressources aux projets
+- Colonnes :
+  - resource_id, project_id
+  - start_date, end_date
+  - quantity (nombre d'unités)
+  - notes, status (planned/active/completed/cancelled)
+  - allocated_by (traçabilité)
+- Indexes sur resource_id, project_id, dates, status
+- Relations CASCADE avec resources et projects
+
+**2. `public/resource_allocate.php` (280 lignes)**
+- Formulaire d'allocation de ressources
+- Sélection ressource avec affichage disponibilité
+- Sélection projet actif
+- Dates début/fin d'allocation
+- Quantité avec validation max disponible
+- Notes optionnelles
+- Mise à jour automatique du statut ressource
+- Notification et logging
+
+**Utilisation de la structure existante:**
+- Table `resources` :
+  - type : humaine, matérielle, financière
+  - availability : disponible, assigne, maintenance
+  - quantity, unit, cost_per_unit
+- Fichier `public/resources.php` existe déjà pour la liste
+
+**Améliorations possibles:**
+- Calendrier de disponibilité des ressources
+- Rapports d'utilisation
+- Coûts par projet
+
+---
+
+### Version 2.2 - Système de Validation Multi-niveaux
+
+**Fichiers créés (2):**
+
+**1. `database/create_validation_system.sql`**
+
+**Table `validation_workflows`:**
+- Gestion des workflows de validation
+- Colonnes :
+  - entity_type (project/task/budget/document/resource)
+  - entity_id (lien vers l'entité)
+  - workflow_name, current_step, total_steps
+  - status (pending/in_review/approved/rejected/cancelled)
+  - initiated_by, created_at, updated_at
+- Index sur entity, status
+
+**Table `validation_steps`:**
+- Étapes individuelles du workflow
+- Colonnes :
+  - workflow_id, step_number, step_name
+  - approver_id, approver_role
+  - status (pending/approved/rejected/skipped)
+  - comments, approved_at
+- Index sur workflow_id, status, approver_id
+
+**Table `validation_history`:**
+- Historique complet des actions
+- Colonnes :
+  - workflow_id, step_id
+  - action (submitted/approved/rejected/commented/cancelled)
+  - user_id, comments, created_at
+- Traçabilité complète
+
+**2. `public/validation_create.php` (360 lignes)**
+- Interface création workflow de validation
+- Passage de paramètres : type et ID entité
+- Récupération info entité (projet/tâche/budget)
+- Sélection approbateurs multiples
+- Ordre de validation défini par l'utilisateur
+- Affichage dynamique de l'ordre de validation
+- Création workflow avec étapes séquentielles
+- Notification premier approbateur
+- Logging complet
+
+**Fonctionnalités:**
+- Validation hiérarchique par étapes
+- Commentaires à chaque étape
+- Historique complet
+- Notifications automatiques
+- Approbation/Rejet avec raisons
+
+**Fichiers à créer (suggérés):**
+- `validation_track.php` : Suivi workflow
+- `validation_approve.php` : Approuver étape
+- `validation_reject.php` : Rejeter avec commentaire
+
+---
+
+### Version 2.3 - Gestion Financière Avancée
+
+**Fichiers créés (3):**
+
+**1. `database/create_financial_system.sql`**
+
+**Table `project_expenses`:**
+- Dépenses détaillées par projet
+- Colonnes :
+  - project_id, expense_date, category
+  - description, amount
+  - invoice_number, supplier
+  - payment_status (pending/paid/cancelled)
+  - payment_date, payment_method
+  - receipt_url, notes
+  - created_by, approved_by
+- Catégories : personnel, equipment, materials, services, travel, other
+- Index sur project_id, date, category, status
+
+**Table `invoices`:**
+- Factures fournisseurs
+- Colonnes :
+  - project_id, invoice_number (unique)
+  - invoice_date, due_date
+  - supplier, description
+  - subtotal, tax_amount, total_amount
+  - status (draft/sent/paid/overdue/cancelled)
+  - payment_date, payment_reference
+  - document_url, notes
+- Index sur project_id, number, status, dates
+
+**Vue `project_financial_summary`:**
+- Résumé financier par projet
+- Calculs :
+  - budget_estimated, budget_validated
+  - total_expenses (somme des dépenses)
+  - remaining_budget (budget validé - dépenses)
+  - budget_consumed_percent (%)
+  - pending_payments (nombre)
+  - invoice_count, paid_invoices_total
+- JOIN avec projects, project_expenses, invoices
+
+**2. `public/expense_create.php` (250 lignes)**
+- Formulaire enregistrement dépense
+- Champs :
+  - Date dépense, catégorie
+  - Description détaillée
+  - Montant en FC
+  - N° facture, fournisseur
+  - Statut paiement
+  - Date et mode de paiement
+  - Notes
+- Validation montants
+- Gestion statut paiement
+- Logging et redirection
+
+**3. `public/project_finances.php` (420 lignes)**
+- Dashboard financier complet du projet
+- **4 KPI cards:**
+  - Budget estimé
+  - Budget validé
+  - Dépenses totales
+  - Budget restant (avec code couleur)
+- **2 Graphiques Chart.js:**
+  - Dépenses par catégorie (Doughnut)
+  - Répartition budget (Pie : dépensé vs restant)
+- **Tableau dépenses:**
+  - Historique complet
+  - Filtres et tri
+  - Statuts paiement
+  - Total en pied de tableau
+- **Tableau factures:**
+  - Liste factures
+  - Statuts, échéances
+  - Montants
+- Code couleur budget :
+  - Vert : < 75% consommé
+  - Jaune : 75-90% consommé  
+  - Rouge : > 90% consommé
+
+**Accès:** Depuis page détails projet → Bouton "Finances"
+
+**Améliorations possibles:**
+- Export comptable CSV/Excel
+- Rapprochement bancaire
+- Prévisions de trésorerie
+- Alertes dépassement budget
+
+---
+
+## 📊 Résumé des Fichiers Créés (Session 29/12/2025)
+
+### Pages PHP (public/)
+1. `executive_dashboard.php` - Dashboard exécutif avec KPIs et graphiques
+2. `project_calendar.php` - Calendrier interactif projets
+3. `calendar_events.php` - API REST événements calendrier
+4. `calendar_update.php` - API REST mise à jour dates
+5. `resource_allocate.php` - Allocation ressources aux projets
+6. `validation_create.php` - Création workflow validation
+7. `expense_create.php` - Enregistrement dépenses
+8. `project_finances.php` - Dashboard financier projet
+
+### Scripts SQL (database/)
+1. `create_resource_allocations.sql` - Table allocations ressources
+2. `create_validation_system.sql` - Tables workflow validation (3 tables)
+3. `create_financial_system.sql` - Tables système financier (2 tables + vue)
+
+### Modifications Menus
+- Ajout "Dashboard Exécutif" dans menu Rapports
+- Ajout "Calendrier" dans menu principal
+
+---
+
+## 📈 Statistiques Finales
+
+### Versions développées
+- **v1.9** : Tableau de Bord Exécutif
+- **v2.0** : Calendrier Interactif
+- **v2.1** : Gestion Ressources
+- **v2.2** : Système Validation
+- **v2.3** : Gestion Financière
+
+### Fichiers créés totaux (session)
+- **8 pages PHP** fonctionnelles
+- **3 scripts SQL** (6 tables + 1 vue)
+- **2 API REST** pour calendrier
+
+### Tables base de données ajoutées
+- `resource_allocations`
+- `validation_workflows`
+- `validation_steps`
+- `validation_history`
+- `project_expenses`
+- `invoices`
+- Vue `project_financial_summary`
+
+### Bibliothèques externes utilisées
+- **FullCalendar.js 6.1.8** - Calendrier interactif
+- **Chart.js 3.9.1** - Graphiques (déjà utilisé)
+
+---
+
+## 🔧 Prochaines Étapes Recommandées
+
+### 1. Tests fonctionnels
+- Tester executive_dashboard.php : vérifier KPIs et graphiques
+- Tester project_calendar.php : drag & drop, filtres
+- Tester allocations ressources
+- Tester enregistrement dépenses
+- Tester création workflow validation
+
+### 2. Fonctionnalités complémentaires suggérées
+- Page suivi workflow validation (`validation_track.php`)
+- Page approbation (`validation_approve.php`)
+- Export rapports financiers Excel/PDF
+- Calendrier disponibilité ressources
+- Dashboard analyse coûts
+
+### 3. Optimisations
+- Cache pour requêtes lourdes dashboard
+- Index supplémentaires si nécessaire
+- Compression graphiques
+- Lazy loading tableaux longs
+
+---
+
+**Dernière mise à jour:** 29 décembre 2025  
+**Versions SIGEP:** 1.0 → 2.3
